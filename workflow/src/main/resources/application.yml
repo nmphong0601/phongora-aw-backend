@@ -1,0 +1,61 @@
+server:
+  port: 8087 # Port của Workflow Service
+
+spring:
+  application:
+    name: workflow
+
+  # Cấu hình Database (Camunda sẽ tự động lưu trạng thái quy trình vào đây)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aw_workflow
+    username: awuser
+    password: phongora1T@Dmin
+    driver-class-name: org.postgresql.Driver
+
+  # Cấu hình Kafka
+  kafka:
+    # Connect via the external listener port
+    bootstrap-servers: 127.0.0.1:9094
+
+    # Cấu hình cho Service BẮN event (Producer) - Vd: proposal, workflow
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+    # Cấu hình cho Service NHẬN event (Consumer) - Vd: workflow, document
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # Bắt buộc để Spring Boot tự động map JSON string thành Java Object (DTO)
+        spring.json.trusted.packages: "com.aw.*"
+
+camunda:
+  bpm:
+    # Tự động tạo bảng database nếu chưa có
+    database:
+      schema-update: true
+
+    # Tạo tài khoản Admin mặc định khi khởi động ứng dụng
+    admin-user:
+      id: "admin"
+      password: "admin"
+      first-name: "Admin"
+
+    # Bật tính năng Job Executor (để chạy các timer, async task trong BPMN)
+    job-execution:
+      enabled: true
+
+    # Cấu hình Webapp
+    webapp:
+      index-redirect-enabled: true # Tự động redirect về trang chủ Camunda khi vào root path
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+springdoc:
+  api-docs:
+    path: /api-docs

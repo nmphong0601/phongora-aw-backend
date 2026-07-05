@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: aw-postgres
+    environment:
+      POSTGRES_USER: awuser
+      POSTGRES_PASSWORD: phongora1T@Dmin
+      # Không cần khai báo POSTGRES_DB ở đây vì chúng ta dùng init.sql để tạo nhiều DB
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount volume để lưu trữ dữ liệu bền vững (không bị mất khi xóa container)
+      - postgres_data:/var/lib/postgresql/data
+      # Mount file init.sql vào thư mục đặc biệt của image để tự động chạy khi khởi tạo lần đầu
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - aw_network
+
+  # 2. Redis Service
+  redis:
+    image: redis:7-alpine
+    container_name: aw-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    # Lệnh bật tính năng lưu trữ dữ liệu xuống ổ cứng (AOF)
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - aw_network
+
+  # Dịch vụ Kafka sử dụng KRaft (Không cần Zookeeper)
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: aw-kafka
+    ports:
+      - "9094:9094" # External port for Spring Boot running on your local machine
+    environment:
+      # 1. KRaft Core Configs
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      CLUSTER_ID: "5L6g3nShT-eMCtK--X86sw" # Required by Apache image to auto-format storage
+
+      # 2. Listeners (Where Kafka binds locally inside the container)
+      # 0.0.0.0 allows it to listen on all network interfaces
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+
+      # 3. Advertised Listeners (What Kafka tells clients to connect to)
+      # STRICT RULE: Never use 0.0.0.0 here.
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://127.0.0.1:9094
+
+      # 4. Listener Mapping & Protocols
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # 5. Controller Quorum (Points to itself for a single-node setup)
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+      # 6. Dev conveniences
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - aw_network
+    restart: unless-stopped
+
+  # UI Quản lý Kafka trực quan trên trình duyệt (Tùy chọn nhưng rất hữu ích)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: aw-kafka-ui
+    ports:
+      - "8086:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=Awesomeware-KRaft
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092 # Connects via Docker internal network
+    depends_on:
+      - kafka
+    networks:
+      - aw_network
+
+# Định nghĩa Volumes để lưu trữ dữ liệu
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+
+# Định nghĩa Network chung cho các container giao tiếp với nhau
+networks:
+  aw_network:
+    driver: bridge
