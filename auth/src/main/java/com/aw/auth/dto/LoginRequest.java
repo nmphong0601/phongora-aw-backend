@@ -12,4 +12,7 @@ public class LoginRequest {
 
     @Schema(description = "Mật khẩu", example = "123456", requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
+
+    @Schema(description = "Ghi nhớ?", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private boolean remember;
 }
