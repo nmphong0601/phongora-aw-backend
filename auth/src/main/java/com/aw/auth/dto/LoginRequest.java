@@ -1,9 +1,15 @@
 package com.aw.auth.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(description = "Đối tượng chứa thông tin đăng nhập từ Client")
 public class LoginRequest {
 

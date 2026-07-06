@@ -20,11 +20,13 @@ spring:
 
 # Cấu hình JWT (Secret này PHẢI KHỚP với Secret cấu hình bên Gateway)
 jwt:
-  secret: "phongora-vn"
+  secret: phongora-vnF3A51D86CB9047E21A6E9CF5D14B7382E8570AD1C63E492FB04A7E9C52D8163F
   expiration: 86400000 # Thời gian sống của Token (1 ngày tính bằng ms)
+  refresh-expiration: 604800000  # 7 ngày
 
 # Cấu hình MyBatis
 mybatis:
+  mapper-locations: classpath:mappers/*.xml
   configuration:
     # Tự động chuyển đổi tên cột (ví dụ: is_active -> isActive, full_name -> fullName)
     map-underscore-to-camel-case: true

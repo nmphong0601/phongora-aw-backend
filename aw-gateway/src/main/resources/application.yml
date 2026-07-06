@@ -75,15 +75,15 @@ spring:
           predicates:
             - Path=/camunda/**
 
+jwt:
+  secret: phongora-vnF3A51D86CB9047E21A6E9CF5D14B7382E8570AD1C63E492FB04A7E9C52D8163F
+  expiration: 86400000 # Thời gian sống của Token (1 ngày tính bằng ms)
+
 # (Tùy chọn) Cấu hình log để dễ debug quá trình routing
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty: DEBUG
-
-jwt:
-  secret: "phongora-vn"
-  expiration: 86400000 # Thời gian sống của Token (1 ngày tính bằng ms)
 
 springdoc:
   swagger-ui:

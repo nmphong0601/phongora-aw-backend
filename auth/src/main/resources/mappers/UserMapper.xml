@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aw.auth.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.aw.auth.entity.User">
+        <id property="id" column="id" typeHandler="com.aw.auth.config.typehandler.UuidTypeHandler"/>
+        <result property="username" column="username"/>
+        <result property="email" column="email"/>
+        <result property="password" column="password"/>
+        <result property="firstName" column="first_name"/>
+        <result property="lastName" column="last_name"/>
+        <result property="isActive" column="is_active"/>
+        <collection property="roles" ofType="string" javaType="java.util.HashSet">
+            <result column="role"/>
+        </collection>
+    </resultMap>
+
+    <select id="findByUsername" resultMap="UserResultMap">
+        SELECT u.*, ur.role
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        WHERE u.username = #{username}
+    </select>
+
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(1) FROM users WHERE username = #{username}
+    </select>
+
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(1) FROM users WHERE email = #{email}
+    </select>
+
+    <insert id="insertUser">
+        INSERT INTO users (id, username, email, password, first_name, last_name, is_active)
+        VALUES (#{id, typeHandler=com.aw.auth.config.typehandler.UuidTypeHandler}, #{username}, #{email}, #{password}, #{firstName}, #{lastName}, #{isActive})
+    </insert>
+
+    <insert id="insertUserRole">
+        INSERT INTO user_roles (user_id, role)
+        VALUES (#{userId}, #{role})
+    </insert>
+
+</mapper>
