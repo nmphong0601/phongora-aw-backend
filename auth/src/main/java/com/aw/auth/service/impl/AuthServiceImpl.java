@@ -2,6 +2,7 @@ package com.aw.auth.service.impl;
 
 import com.aw.auth.dto.*;
 import com.aw.auth.entity.User;
+import com.aw.auth.entity.UserRole;
 import com.aw.auth.mapper.UserMapper;
 import com.aw.auth.security.JwtService;
 import com.aw.auth.service.AuthService;
@@ -63,6 +64,10 @@ public class AuthServiceImpl implements AuthService {
         for (String role : user.getRoles()) {
             userMapper.insertUserRole(user.getId(), role);
         }
+    }
+
+    private static UUID getId(User user) {
+        return user.getId();
     }
 
     @Override

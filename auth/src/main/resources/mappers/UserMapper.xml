@@ -3,18 +3,27 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aw.auth.mapper.UserMapper">
-
     <resultMap id="UserResultMap" type="com.aw.auth.entity.User">
         <id property="id" column="id" typeHandler="com.aw.auth.config.typehandler.UuidTypeHandler"/>
         <result property="username" column="username"/>
         <result property="email" column="email"/>
         <result property="password" column="password"/>
-        <result property="firstName" column="first_name"/>
-        <result property="lastName" column="last_name"/>
         <result property="isActive" column="is_active"/>
         <collection property="roles" ofType="string" javaType="java.util.HashSet">
             <result column="role"/>
         </collection>
+    </resultMap>
+
+    <resultMap id="RoleMenuResultMap" type="com.aw.auth.entity.RoleMenu">
+        <id property="roleName" column="role_name"/>
+        <id property="menuCode" column="menu_code"/>
+        <result property="canRead" column="can_read"/>
+        <result property="canWrite" column="can_write"/>
+        <result property="canUpdate" column="can_update"/>
+        <result property="canDelete" column="can_delete"/>
+        <result property="canApprove" column="can_approve"/>
+        <result property="canReturn" column="can_return"/>
+        <result property="canReject" column="can_reject"/>
     </resultMap>
 
     <select id="findByUsername" resultMap="UserResultMap">
@@ -33,13 +42,97 @@
     </select>
 
     <insert id="insertUser">
-        INSERT INTO users (id, username, email, password, first_name, last_name, is_active)
-        VALUES (#{id, typeHandler=com.aw.auth.config.typehandler.UuidTypeHandler}, #{username}, #{email}, #{password}, #{firstName}, #{lastName}, #{isActive})
+        INSERT INTO users (id, username, email, password, is_active)
+        VALUES (#{id, typeHandler=com.aw.auth.config.typehandler.UuidTypeHandler}, #{username}, #{email}, #{password}, #{isActive})
     </insert>
 
+    <select id="findById" resultMap="UserResultMap">
+        SELECT id, username, password, email FROM users
+        WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+    </select>
+
+    <select id="findByUsername" resultMap="UserResultMap">
+        SELECT id, username, password, email FROM users WHERE username = #{username}
+    </select>
+
+    <update id="updateUser">
+        UPDATE users
+        SET username = #{username}, password = #{password}, email = #{email}
+        WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+    </update>
+
+    <delete id="deleteUserById">
+        DELETE FROM users WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+    </delete>
+
     <insert id="insertUserRole">
-        INSERT INTO user_roles (user_id, role)
-        VALUES (#{userId}, #{role})
+        INSERT INTO user_roles (user_id, role_name)
+        VALUES (#{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}, #{roleName})
     </insert>
+
+    <delete id="deleteUserRole">
+        DELETE FROM user_roles
+        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler} AND role_name = #{roleName}
+    </delete>
+
+    <delete id="deleteAllRolesByUserId">
+        DELETE FROM user_roles
+        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}
+    </delete>
+
+    <select id="findRolesByUserId" resultType="java.lang.String">
+        SELECT role_name FROM user_roles
+        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}
+    </select>
+
+    <insert id="insertRoleMenu">
+        INSERT INTO role_menus (
+            role_name, menu_code,
+            can_read, can_write, can_update, can_delete, can_approve, can_return, can_reject
+        )
+        VALUES (
+                   #{roleName}, #{menuCode},
+                   #{canRead}, #{canWrite}, #{canUpdate}, #{canDelete}, #{canApprove}, #{canReturn}, #{canReject}
+               )
+    </insert>
+
+    <update id="updateRoleMenuPrivileges">
+        UPDATE role_menus
+        SET can_read = #{canRead},
+            can_write = #{canWrite},
+            can_update = #{canUpdate},
+            can_delete = #{canDelete},
+            can_approve = #{canApprove},
+            can_return = #{canReturn},
+            can_reject = #{canReject}
+        WHERE role_name = #{roleName} AND menu_code = #{menuCode}
+    </update>
+
+    <delete id="deleteRoleMenu">
+        DELETE FROM role_menus
+        WHERE role_name = #{roleName} AND menu_code = #{menuCode}
+    </delete>
+
+    <select id="findMenuPrivilegesByRoleName" resultMap="RoleMenuResultMap">
+        SELECT
+            role_name, menu_code,
+            can_read, can_write, can_update, can_delete, can_approve, can_return, can_reject
+        FROM role_menus
+        WHERE role_name = #{roleName}
+    </select>
+
+    <insert id="insertGroupRole">
+        INSERT INTO group_roles (group_id, role)
+        VALUES (#{groupId}, #{roleName})
+    </insert>
+
+    <delete id="deleteGroupRole">
+        DELETE FROM group_roles
+        WHERE group_id = #{groupId} AND role = #{roleName}
+    </delete>
+
+    <select id="findRolesByGroupId" resultType="java.lang.String">
+        SELECT role FROM group_roles WHERE group_id = #{groupId}
+    </select>
 
 </mapper>

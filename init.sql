@@ -42,7 +42,6 @@ CREATE TABLE users (
                        username VARCHAR(50) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL, -- Mật khẩu băm (BCrypt)
                        email VARCHAR(100) UNIQUE NOT NULL,
-                       full_name VARCHAR(100) NOT NULL,
                        is_active BOOLEAN DEFAULT TRUE,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -66,17 +65,36 @@ CREATE TABLE user_roles (
                             CONSTRAINT fk_role_user FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
+CREATE TABLE user_role_menus (
+                                 role_name VARCHAR(50) NOT NULL,
+                                 menu_code VARCHAR(100) NOT NULL, -- Ví dụ: 'MENU_INVOICE', 'FUNC_PAYMENT'
+                                 can_read BOOLEAN DEFAULT FALSE,
+                                 can_write BOOLEAN DEFAULT FALSE,
+                                 can_update BOOLEAN DEFAULT FALSE,
+                                 can_delete BOOLEAN DEFAULT FALSE,
+                                 can_approve BOOLEAN DEFAULT FALSE,
+                                 can_return BOOLEAN DEFAULT FALSE,
+                                 can_reject BOOLEAN DEFAULT FALSE,
+                                 PRIMARY KEY (role_name, menu_code)
+);
+
 -- --- INSERT DỮ LIỆU MẪU ---
 -- Tạo 3 Roles: admin, staff, manager
 INSERT INTO roles (id, name, description) VALUES
-                                              (1, 'admin', 'Quản trị viên hệ thống'),
-                                              (2, 'staff', 'Nhân viên thông thường'),
-                                              (3, 'manager', 'Quản lý, cấp phê duyệt');
+                                              (1, 'ROLE_ADMIN', 'Quản trị viên hệ thống'),
+                                              (2, 'ROLE_STAFF', 'Nhân viên thông thường'),
+                                              (3, 'ROLE_LEADER', 'Trưởng nhóm'),
+                                              (4, 'ROLE_SUPERVISOR', 'Giám sát'),
+                                              (5, 'ROLE_DEPARTMENT_MANAGER', 'Trưởng phòng'),
+                                              (6, 'ROLE_DIVISION_MANAGER', 'Trưởng khối'),
+                                              (6, 'ROLE_GD', 'Giám đốc');
 
--- Tạo 2 Groups: System, General
+-- Tạo 2 Groups
 INSERT INTO groups (id, name, description) VALUES
-                                               (1, 'System', 'Nhóm vận hành hệ thống'),
-                                               (2, 'General', 'Nhóm nhân sự chung');
+                                               (1, 'GROUP_SYSTEM', 'Nhóm vận hành hệ thống'),
+                                               (2, 'GROUP_FINANCE', 'Nhóm tài chính'),
+                                               (3, 'GROUP_PURCHASING', 'Nhóm mua hàng'),
+                                               (4, 'GROUP_HRM', 'Nhóm quản lý nhân sự');
 
 -- Gán quyền cho nhóm (Group -> Role)
 -- Nhóm System chứa quyền admin và manager
@@ -85,13 +103,15 @@ INSERT INTO group_roles (group_id, role_id) VALUES (1, 1), (1, 3);
 INSERT INTO group_roles (group_id, role_id) VALUES (2, 2);
 
 -- Tạo tài khoản mẫu (Mật khẩu '123456' băm bằng BCrypt)
-INSERT INTO users (id, username, password, email, full_name) VALUES
-                                                                 ('11111111-1111-1111-1111-111111111111', 'sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@groupware.com', 'Admin Hệ Thống'),
-                                                                 ('22222222-2222-2222-2222-222222222222', 'general_user', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'user@groupware.com', 'Nhân viên Thường');
+INSERT INTO users (id, username, password, email) VALUES
+                                                                 ('11111111-1111-1111-1111-111111111111', 'sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@groupware.com'),
+                                                                 ('22222222-2222-2222-2222-222222222222', 'general_user', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'user@groupware.com');
 
 -- Gán trực tiếp Quyền cho User (User -> Role) thay vì gán Group
 -- sys_admin được cấp quyền admin, manager
-INSERT INTO user_roles (user_id, role_id) VALUES ('11111111-1111-1111-1111-111111111111', 1), ('11111111-1111-1111-1111-111111111111', 3);
+INSERT INTO user_roles (user_id, role_id) VALUES
+                                              ('11111111-1111-1111-1111-111111111111', 1),
+                                              ('11111111-1111-1111-1111-111111111111', 3);
 -- general_user được cấp quyền staff
 INSERT INTO user_roles (user_id, role_id) VALUES ('22222222-2222-2222-2222-222222222222', 2);
 
