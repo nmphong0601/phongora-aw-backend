@@ -18,27 +18,10 @@
     </properties>
 
     <dependencies>
-        <!-- Spring Boot Web & JPA -->
+        <!-- Module Common (chứa DTO và cấu hình chung) -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-
-        <!-- PostgreSQL -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Kafka để lắng nghe Event -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
+            <groupId>com.phongora-aw</groupId>
+            <artifactId>aw-common</artifactId>
         </dependency>
 
         <!-- JasperReports để xuất PDF -->
@@ -46,12 +29,6 @@
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports</artifactId>
             <version>6.21.0</version> <!-- Có thể điều chỉnh version phù hợp -->
-        </dependency>
-
-        <!-- Module Common (chứa DTO và cấu hình chung) -->
-        <dependency>
-            <groupId>com.phongora-aw</groupId>
-            <artifactId>aw-common</artifactId>
         </dependency>
     </dependencies>
 

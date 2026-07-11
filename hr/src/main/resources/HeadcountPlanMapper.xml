@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aw.hr.mapper.HeadcountPlanMapper">
+    <resultMap id="HeadcountPlanResultMap" type="com.aw.hr.entity.HeadcountPlan">
+        <id property="id" column="id"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="titleId" column="title_id"/>
+        <result property="planYear" column="plan_year"/>
+        <result property="targetCount" column="target_count"/>
+        <result property="currentCount" column="current_count"/>
+        <result property="status" column="status"/>
+        <result property="workflowInstanceId" column="workflow_instance_id"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insertHeadcountPlan">
+        INSERT INTO hr_headcount_plans (
+            id, department_id, title_id, plan_year, target_count, current_count,
+            status, workflow_instance_id, created_by, created_at, updated_at
+        )
+        VALUES (
+                   #{id},
+                   #{departmentId},
+                   #{titleId},
+                   #{planYear}, #{targetCount}, #{currentCount},
+                   #{status},
+                   #{workflowInstanceId},
+                   #{createdBy},
+                   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+               )
+    </insert>
+
+    <select id="findById" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM hr_headcount_plans
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByDepartmentAndYear" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM hr_headcount_plans
+        WHERE department_id = #{departmentId}
+          AND plan_year = #{planYear}
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateHeadcountPlan">
+        UPDATE hr_headcount_plans
+        SET target_count = #{targetCount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateWorkflowStatus">
+        UPDATE hr_headcount_plans
+        SET status = #{status},
+            workflow_instance_id = #{workflowInstanceId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateCurrentCount">
+        UPDATE hr_headcount_plans
+        SET current_count = #{currentCount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM hr_headcount_plans
+        WHERE id = #{id}
+          AND status = 'DRAFT'
+    </delete>
+
+</mapper>

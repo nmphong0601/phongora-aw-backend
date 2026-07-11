@@ -32,6 +32,7 @@
         <module>document</module>
         <module>finance</module>
         <module>notification</module>
+        <module>hr</module>
     </modules>
 
     <dependencyManagement>

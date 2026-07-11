@@ -43,12 +43,12 @@
 
     <insert id="insertUser">
         INSERT INTO users (id, username, email, password, is_active)
-        VALUES (#{id, typeHandler=com.aw.auth.config.typehandler.UuidTypeHandler}, #{username}, #{email}, #{password}, #{isActive})
+        VALUES (#{id}, #{username}, #{email}, #{password}, #{isActive})
     </insert>
 
     <select id="findById" resultMap="UserResultMap">
         SELECT id, username, password, email FROM users
-        WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+        WHERE id = #{id}
     </select>
 
     <select id="findByUsername" resultMap="UserResultMap">
@@ -58,31 +58,31 @@
     <update id="updateUser">
         UPDATE users
         SET username = #{username}, password = #{password}, email = #{email}
-        WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+        WHERE id = #{id}
     </update>
 
     <delete id="deleteUserById">
-        DELETE FROM users WHERE id = #{id, typeHandler=com.aw.auth.config.UuidTypeHandler}
+        DELETE FROM users WHERE id = #{id}
     </delete>
 
     <insert id="insertUserRole">
         INSERT INTO user_roles (user_id, role_name)
-        VALUES (#{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}, #{roleName})
+        VALUES (#{userId}, #{roleName})
     </insert>
 
     <delete id="deleteUserRole">
         DELETE FROM user_roles
-        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler} AND role_name = #{roleName}
+        WHERE user_id = #{userId} AND role_name = #{roleName}
     </delete>
 
     <delete id="deleteAllRolesByUserId">
         DELETE FROM user_roles
-        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}
+        WHERE user_id = #{userId}
     </delete>
 
     <select id="findRolesByUserId" resultType="java.lang.String">
         SELECT role_name FROM user_roles
-        WHERE user_id = #{userId, typeHandler=com.aw.auth.config.UuidTypeHandler}
+        WHERE user_id = #{userId}
     </select>
 
     <insert id="insertRoleMenu">
