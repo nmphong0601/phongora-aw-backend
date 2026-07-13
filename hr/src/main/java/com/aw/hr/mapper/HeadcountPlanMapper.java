@@ -1,6 +1,6 @@
 package com.aw.hr.mapper;
 
-import com.aw.hr.entity.HeadcountPlan;
+import com.aw.hr.entity.HeadcountPlanEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -11,13 +11,13 @@ import java.util.UUID;
 public interface HeadcountPlanMapper {
 
     // Khởi tạo bản nháp Kế hoạch định biên
-    void insertHeadcountPlan(HeadcountPlan plan);
+    void insertHeadcountPlan(HeadcountPlanEntity plan);
 
     // Truy vấn chi tiết theo ID
-    HeadcountPlan findById(@Param("id") UUID id);
+    HeadcountPlanEntity findById(@Param("id") UUID id);
 
     // Cập nhật thông tin (Chỉ áp dụng khi ở trạng thái DRAFT hoặc RETURNED)
-    void updateHeadcountPlan(HeadcountPlan plan);
+    void updateHeadcountPlan(HeadcountPlanEntity plan);
 
     // Cập nhật riêng trạng thái và ID luồng duyệt (Dùng khi submit luồng duyệt)
     void updateWorkflowStatus(
@@ -33,7 +33,7 @@ public interface HeadcountPlanMapper {
     );
 
     // Lấy danh sách định biên theo Phòng ban và Năm (Phục vụ Validate)
-    List<HeadcountPlan> findByDepartmentAndYear(
+    List<HeadcountPlanEntity> findByDepartmentAndYear(
             @Param("departmentId") UUID departmentId,
             @Param("planYear") Integer planYear
     );

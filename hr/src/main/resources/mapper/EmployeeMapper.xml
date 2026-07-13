@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aw.hr.mapper.EmployeeMapper">
+    <insert id="insertSeedEmployee" parameterType="com.aw.hr.entity.EmployeeEntity">
+        INSERT INTO employees (id, employee_code, full_name, org_unit_code, title_code, employment_status)
+        VALUES (
+                #{id},
+                #{employeeCode},
+                #{fullName},
+                #{orgUnitCode},
+                #{titleCode},
+                'ACTIVE'
+               );
+    </insert>
+</mapper>

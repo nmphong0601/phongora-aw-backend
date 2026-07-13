@@ -1,4 +1,4 @@
-package com.aw.auth.dto;
+package com.aw.hr.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,13 @@ import java.util.UUID;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class UserProfileResponse {
+@AllArgsConstructor
+public class EmployeeEntity {
     private UUID id;
-    private String username;
-    private String email;
+    private String employeeCode;
     private String fullName;
+    private String orgUnitCode;
+    private String titleCode;
+    private String employeeStatus;
 }

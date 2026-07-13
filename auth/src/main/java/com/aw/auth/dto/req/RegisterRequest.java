@@ -1,4 +1,4 @@
-package com.aw.auth.dto;
+package com.aw.auth.dto.req;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aw.auth.mapper.UserMapper">
     <resultMap id="UserResultMap" type="com.aw.auth.entity.User">
-        <id property="id" column="id" typeHandler="com.aw.auth.config.typehandler.UuidTypeHandler"/>
+        <id property="id" column="id"/>
         <result property="username" column="username"/>
         <result property="email" column="email"/>
         <result property="password" column="password"/>
@@ -29,7 +29,7 @@
     <select id="findByUsername" resultMap="UserResultMap">
         SELECT u.*, ur.role
         FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN user_roles ur ON u.name = ur.user_name
         WHERE u.username = #{username}
     </select>
 
@@ -42,17 +42,13 @@
     </select>
 
     <insert id="insertUser">
-        INSERT INTO users (id, username, email, password, is_active)
-        VALUES (#{id}, #{username}, #{email}, #{password}, #{isActive})
+        INSERT INTO users (id, username, email, password, employee_id, is_active)
+        VALUES (#{id}, #{username}, #{email}, #{password}, #{employeeId}, #{isActive})
     </insert>
 
     <select id="findById" resultMap="UserResultMap">
         SELECT id, username, password, email FROM users
         WHERE id = #{id}
-    </select>
-
-    <select id="findByUsername" resultMap="UserResultMap">
-        SELECT id, username, password, email FROM users WHERE username = #{username}
     </select>
 
     <update id="updateUser">
@@ -66,23 +62,23 @@
     </delete>
 
     <insert id="insertUserRole">
-        INSERT INTO user_roles (user_id, role_name)
-        VALUES (#{userId}, #{roleName})
+        INSERT INTO user_roles (user_name, role_name)
+        VALUES (#{userName}, #{roleName})
     </insert>
 
     <delete id="deleteUserRole">
         DELETE FROM user_roles
-        WHERE user_id = #{userId} AND role_name = #{roleName}
+        WHERE user_name = #{userName} AND role_name = #{roleName}
     </delete>
 
     <delete id="deleteAllRolesByUserId">
         DELETE FROM user_roles
-        WHERE user_id = #{userId}
+        WHERE user_name = #{userName}
     </delete>
 
-    <select id="findRolesByUserId" resultType="java.lang.String">
+    <select id="findRolesByUserName" resultType="java.lang.String">
         SELECT role_name FROM user_roles
-        WHERE user_id = #{userId}
+        WHERE user_name = #{userName}
     </select>
 
     <insert id="insertRoleMenu">

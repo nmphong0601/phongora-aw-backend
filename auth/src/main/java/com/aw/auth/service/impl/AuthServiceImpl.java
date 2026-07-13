@@ -1,8 +1,11 @@
 package com.aw.auth.service.impl;
 
-import com.aw.auth.dto.*;
+import com.aw.auth.dto.req.LoginRequest;
+import com.aw.auth.dto.req.RefreshTokenRequest;
+import com.aw.auth.dto.req.RegisterRequest;
+import com.aw.auth.dto.res.AuthResponse;
+import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.entity.User;
-import com.aw.auth.entity.UserRole;
 import com.aw.auth.mapper.UserMapper;
 import com.aw.auth.security.JwtService;
 import com.aw.auth.service.AuthService;
@@ -31,8 +34,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Set<String> getRolesByUserId(UUID userId) {
-        return userMapper.findRoleNamesByUserId(userId);
+    public Set<String> getRolesByUserName(String userName) {
+        return userMapper.findRoleNamesByUserName(userName);
     }
 
     @Override
@@ -50,9 +53,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .roles(Collections.singleton("ROLE_USER"))
+                .roles(Collections.singleton("ROLE_STAFF"))
                 .isActive(true)
                 .build();
         user.setId(UUID.randomUUID());
@@ -62,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 3. Lưu quyền (Roles) liên kết với ID vừa tạo
         for (String role : user.getRoles()) {
-            userMapper.insertUserRole(user.getId(), role);
+            userMapper.insertUserRole(user.getUsername(), role);
         }
     }
 
@@ -115,7 +116,6 @@ public class AuthServiceImpl implements AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .fullName(user.getFirstName() + " " + user.getLastName())
                 .build();
     }
 }

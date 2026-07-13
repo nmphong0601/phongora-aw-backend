@@ -26,14 +26,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Bảng Roles (Các quyền hạn)
 CREATE TABLE roles (
-                       id SERIAL PRIMARY KEY,
+                       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                        name VARCHAR(50) UNIQUE NOT NULL,
                        description VARCHAR(255)
 );
 
 -- 2. Bảng Groups (Nhóm - Dùng làm Role Templates)
 CREATE TABLE groups (
-                        id SERIAL PRIMARY KEY,
+                        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                         name VARCHAR(100) UNIQUE NOT NULL,
                         description VARCHAR(255)
 );
@@ -43,7 +43,7 @@ CREATE TABLE users (
                        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                        username VARCHAR(50) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL, -- Mật khẩu băm (BCrypt)
-                       email VARCHAR(100) UNIQUE NOT NULL,
+                       email VARCHAR(100) UNIQUE NULL,
                        is_active BOOLEAN DEFAULT TRUE,
                        employee_id UUID UNIQUE, -- Tham chiếu tới hồ sơ nhân sự
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -52,20 +52,20 @@ CREATE TABLE users (
 
 -- 4. Bảng Group_Roles (Trung gian N-N: Group chứa Roles)
 CREATE TABLE group_roles (
-                             group_id INT NOT NULL,
-                             role_id INT NOT NULL,
-                             PRIMARY KEY (group_id, role_id),
-                             CONSTRAINT fk_group FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-                             CONSTRAINT fk_role_group FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+                             group_name VARCHAR(100) NOT NULL,
+                             role_name VARCHAR(50) NOT NULL,
+                             PRIMARY KEY (group_name, role_name),
+                             CONSTRAINT fk_group FOREIGN KEY (group_name) REFERENCES groups(name) ON DELETE CASCADE,
+                             CONSTRAINT fk_role_group FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE
 );
 
 -- 5. Bảng User_Roles (Trung gian N-N: User có Roles)
 CREATE TABLE user_roles (
-                            user_id UUID NOT NULL,
-                            role_id INT NOT NULL,
-                            PRIMARY KEY (user_id, role_id),
-                            CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                            CONSTRAINT fk_role_user FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+                            user_name VARCHAR(50) NOT NULL,
+                            role_name VARCHAR(50) NOT NULL,
+                            PRIMARY KEY (user_name, role_name),
+                            CONSTRAINT fk_user FOREIGN KEY (user_name) REFERENCES users(username) ON DELETE CASCADE,
+                            CONSTRAINT fk_role_user FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE
 );
 
 CREATE TABLE user_role_menus (
@@ -83,47 +83,50 @@ CREATE TABLE user_role_menus (
 
 -- --- INSERT DỮ LIỆU MẪU ---
 -- Tạo 3 Roles: admin, staff, manager
-INSERT INTO roles (id, name, description) VALUES
-                                              (1, 'ROLE_ADMIN', 'Quản trị viên hệ thống'),
-                                              (2, 'ROLE_STAFF', 'Nhân viên thông thường'),
-                                              (3, 'ROLE_LEADER', 'Trưởng nhóm'),
-                                              (4, 'ROLE_SUPERVISOR', 'Giám sát'),
-                                              (5, 'ROLE_DEPT_MANAGER', 'Trưởng phòng'),
-                                              (6, 'ROLE_DIV_MANAGER', 'Trưởng khối'),
-                                              (7, 'ROLE_HR_MANAGER', 'Trưởng phòng Nhân sự'),
-                                              (8, 'ROLE_ACC_MANAGER', 'Trưởng phòng Kế toán'),
-                                              (9, 'ROLE_GD', 'Giám đốc');
+INSERT INTO roles (name, description) VALUES
+                                              ('ROLE_ADMIN', 'Quản trị viên hệ thống'),
+                                              ('ROLE_STAFF', 'Nhân viên thông thường'),
+                                              ('ROLE_LEADER', 'Trưởng nhóm'),
+                                              ('ROLE_SUP', 'Giám sát'),
+                                              ('ROLE_DEPT_MANAGER', 'Trưởng phòng'),
+                                              ('ROLE_HR_EXEC', 'Chuyên viên Nhân sự'),
+                                              ('ROLE_HR_MANAGER', 'Trưởng phòng Nhân sự'),
+                                              ('ROLE_ACC_MANAGER', 'Trưởng phòng Kế toán'),
+                                              ('ROLE_DIV_DIRECTOR', 'Trưởng khối'),
+                                              ('ROLE_BR_DIRECTOR', 'Giám đốc chi nhánh'),
+                                              ('ROLE_GD', 'Giám đốc');
 
 -- Tạo 2 Groups
-INSERT INTO groups (id, name, description) VALUES
-                                               (1, 'GROUP_SYSTEM', 'Nhóm vận hành hệ thống'),
-                                               (2, 'GROUP_FINANCE', 'Nhóm tài chính'),
-                                               (3, 'GROUP_PURCHASING', 'Nhóm mua hàng'),
-                                               (4, 'GROUP_HRM', 'Nhóm quản lý nhân sự');
+INSERT INTO groups (name, description) VALUES
+                                               ('GROUP_SYSTEM', 'Nhóm vận hành hệ thống'),
+                                               ('GROUP_GENERAL', 'Nhóm chung'),
+                                               ('GROUP_FINANCE', 'Nhóm tài chính'),
+                                               ('GROUP_PURCHASING', 'Nhóm mua hàng'),
+                                               ('GROUP_HRM', 'Nhóm quản lý nhân sự');
 
 -- Gán quyền cho nhóm (Group -> Role)
 -- Nhóm System chứa quyền admin và manager
-INSERT INTO group_roles (group_id, role_id) VALUES (1, 1), (1, 3);
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_SYSTEM', 'ROLE_ADMIN');
 -- Nhóm General chứa quyền staff
-INSERT INTO group_roles (group_id, role_id) VALUES (2, 2);
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_GENERAL', 'ROLE_STAFF');
 
 -- Tạo tài khoản mẫu (Mật khẩu '123456' băm bằng BCrypt)
-INSERT INTO users (id, username, password, email) VALUES ('11111111-1111-1111-1111-111111111111', 'sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@phongora-aw.com');
+INSERT INTO users (username, password, email) VALUES ('sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@phongora-aw.com');
 
 -- Gán trực tiếp Quyền cho User (User -> Role) thay vì gán Group
 -- sys_admin được cấp quyền admin
-INSERT INTO user_roles (user_id, role_id) VALUES ('11111111-1111-1111-1111-111111111111', 1);
+INSERT INTO user_roles (user_name, role_name) VALUES ('sys_admin', 'ROLE_ADMIN');
 
 -- II. Chuyển sang database master data
-\c aw_master_data;
+\c aw_hr;
 
-CREATE TABLE md_code_sequences (
+CREATE TABLE employee_code_sequences (
                                    company_code VARCHAR(10) PRIMARY KEY, -- Ví dụ: 'AW'
                                    next_sequence INT DEFAULT 1           -- Số thứ tự tiếp theo
 );
 
 -- Khởi tạo cho công ty mẫu
-INSERT INTO md_code_sequences (company_code, next_sequence) VALUES ('AW', 1);
+INSERT INTO employee_code_sequences (company_code, next_sequence) VALUES ('AW', 1);
 
 -- 1. Bảng Cấp độ đơn vị tổ chức
 CREATE TABLE org_unit_levels (
@@ -179,184 +182,33 @@ CREATE TABLE job_titles (
 );
 
 -- 3. Bảng Employee (Nhân sự)
-CREATE TABLE hr_employees (
+CREATE TABLE employees (
                               id UUID PRIMARY KEY,
                               employee_code VARCHAR(20) UNIQUE NOT NULL, -- AW00001
                               full_name VARCHAR(100) NOT NULL,
-                              org_unit_id UUID NOT NULL,
-                              title_id UUID,
+                              org_unit_code VARCHAR(50) NOT NULL,
+                              title_code VARCHAR(50),
                               employment_status VARCHAR(20) DEFAULT 'ACTIVE',
                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Chèn dữ liệu mẫu cho cấu trúc 5 cấp của bạn
-INSERT INTO org_unit_levels (level_index, level_code, level_name, can_have_headcount)
-VALUES
-    (1, 'COMPANY', 'Tổng công ty', FALSE),
-    (2, 'BRANCH', 'Chi nhánh', FALSE),
-    (3, 'DIVISION', 'Khối nghiệp vụ', TRUE),
-    (4, 'DEPARTMENT', 'Phòng ban', TRUE),
-    (5, 'TEAM', 'Đội nhóm', TRUE);
-
--- Giả định các ID cho level_id từ 1 đến 5:
--- 1: COMPANY, 2: BRANCH, 3: DIVISION, 4: DEPARTMENT, 5: TEAM
-
-DO $$
-DECLARE
-    v_company_id UUID := gen_random_uuid();
-    v_branch_hcm_id UUID := gen_random_uuid();
-    v_div_tech_id UUID := gen_random_uuid();
-    v_dept_dev_id UUID := gen_random_uuid();
-BEGIN
-    -- 1. Cấp 1: Company (Root)
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES (v_company_id, 'AW_CORP', 'Awesome Corporation', 1, NULL);
-
-    -- 2. Cấp 2: Branch
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES (v_branch_hcm_id, 'BR_HCM', 'Chi nhánh Hồ Chí Minh', 2, v_company_id);
-
-    -- 3. Cấp 3: Division
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES (v_div_tech_id, 'DIV_TECH', 'Khối Công nghệ', 3, v_branch_hcm_id);
-
-    -- 4. Cấp 4: Department
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES (v_dept_dev_id, 'DEPT_DEV', 'Phòng Phát triển Phần mềm', 4, v_div_tech_id);
-
-    -- 5. Cấp 5: Team
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES
-        (gen_random_uuid(), 'TEAM_BE', 'Team Backend', 5, v_dept_dev_id),
-        (gen_random_uuid(), 'TEAM_FE', 'Team Frontend', 5, v_dept_dev_id);
-
-    -- Thêm một nhánh khác để thấy rõ sự phân cấp
-    INSERT INTO org_units (id, code, name, level_id, parent_id)
-    VALUES (gen_random_uuid(), 'DEPT_QA', 'Phòng Kiểm thử (QA)', 4, v_div_tech_id);
-END $$;
-
-INSERT INTO job_levels (id, code, name, rank_value)
-VALUES
-    (gen_random_uuid(), 'INT', 'Intern / Thực tập sinh', 1),
-    (gen_random_uuid(), 'FRE', 'Fresher / Sinh viên mới tốt nghiệp', 2),
-    (gen_random_uuid(), 'JUN', 'Junior / Chuyên viên', 3),
-    (gen_random_uuid(), 'MID', 'Middle / Chuyên viên chính', 4),
-    (gen_random_uuid(), 'SEN', 'Senior / Chuyên viên cao cấp', 5),
-    (gen_random_uuid(), 'MGR', 'Manager / Quản lý', 6),
-    (gen_random_uuid(), 'DIR', 'Director / Giám đốc', 7);
-
-DO $$
-DECLARE
-    lvl_jun UUID; lvl_sen UUID; lvl_mgr UUID;
-BEGIN
-     -- Lấy ID của các Level
-    SELECT id INTO lvl_jun FROM job_levels WHERE code = 'JUN';
-    SELECT id INTO lvl_sen FROM job_levels WHERE code = 'SEN';
-    SELECT id INTO lvl_mgr FROM job_levels WHERE code = 'MGR';
-
-    -- Khởi tạo chức danh Khối IT
-    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
-                                                                 (gen_random_uuid(), 'BE_DEV_JUN', 'Backend Developer (Junior)', lvl_jun),
-                                                                 (gen_random_uuid(), 'BE_DEV_SEN', 'Backend Developer (Senior)', lvl_sen),
-                                                                 (gen_random_uuid(), 'FE_DEV_JUN', 'Frontend Developer (Junior)', lvl_jun),
-                                                                 (gen_random_uuid(), 'QA_QC', 'QA/QC Engineer', lvl_jun),
-                                                                 (gen_random_uuid(), 'IT_MGR', 'IT Manager', lvl_mgr);
-
-    -- Khởi tạo chức danh Khối HR & FIN
-    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
-                                                                 (gen_random_uuid(), 'HR_EXEC', 'HR Executive', lvl_jun),
-                                                                 (gen_random_uuid(), 'HR_MGR', 'HR Manager', lvl_mgr),
-                                                                 (gen_random_uuid(), 'ACC', 'Accountant', lvl_jun);
-END $$;
-
-CREATE OR REPLACE FUNCTION generate_next_employee_code(p_company_code VARCHAR)
-RETURNS VARCHAR AS $$
-DECLARE
-    v_next_val INT;
-    v_result VARCHAR;
-BEGIN
-    -- Lấy và tăng sequence trong cùng một câu lệnh
-    UPDATE md_code_sequences
-    SET next_sequence = next_sequence + 1
-    WHERE company_code = p_company_code
-        RETURNING next_sequence - 1 INTO v_next_val;
-
-    -- Format: COMPANY_CODE + 5 chữ số
-    v_result := p_company_code || LPAD(v_next_val::TEXT, 5, '0');
-
-    RETURN v_result;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION create_sample_user(
-    p_full_name VARCHAR,
-    p_org_id UUID,
-    p_role VARCHAR
-) RETURNS VOID AS $$
-DECLARE
-    v_emp_id UUID := gen_random_uuid();
-    v_user_id UUID := gen_random_uuid();
-    v_emp_code TEXT;
-BEGIN
-    -- 1. Lấy mã nhân viên mới tự động
-    v_emp_code := generate_next_employee_code('AW');
-
-    -- 2. Insert vào hr_employees
-    INSERT INTO hr_employees (id, employee_code, full_name, org_unit_id, employment_status)
-    VALUES (v_emp_id, v_emp_code, p_full_name, p_org_id, 'ACTIVE');
-
-    -- 3. Insert vào users
-    INSERT INTO users (id, username, password, employee_id)
-    VALUES (v_user_id, v_emp_code, '$2a$10$EixZaYVK1fsbw1Zfbx3OXePaWxn96p36wV4C5W/8S77tqW4xZlq82', v_emp_id);
-
-    -- 4. Gán quyền (Giả định bạn có bảng user_roles)
-    INSERT INTO user_roles (user_id, role_name)
-    VALUES (v_user_id, p_role);
-
-    RAISE NOTICE 'Da tao user: %, role: %', v_emp_code, p_role;
-END;
-$$ LANGUAGE plpgsql;
-
-DO $$
-DECLARE
-    v_dept_id UUID := 'c0000000-0000-0000-0000-000000000004';
-    v_hr_id UUID := 'c0000000-0000-0000-0000-000000000003';
-    v_div_id UUID := 'c0000000-0000-0000-0000-000000000002';
-    v_corp_id UUID := 'c0000000-0000-0000-0000-000000000001';
-BEGIN
-    -- 1. Trưởng phòng Nhân sự (ROLE_HR_MANAGER)
-    PERFORM create_sample_user('HR Manager', v_hr_id, 'ROLE_HR_MANAGER');
-
-    -- 2. Trưởng phòng Phát triển (ROLE_DEPT_MANAGER)
-    PERFORM create_sample_user('IT Manager', v_dept_id, 'ROLE_DEPT_MANAGER');
-
-    -- 3. Giám đốc khối Công nghệ (ROLE_DIV_DIRECTOR)
-    PERFORM create_sample_user('Division Director', v_div_id, 'ROLE_DIV_DIRECTOR');
-
-    -- 4. Tổng giám đốc (ROLE_GD)
-    PERFORM create_sample_user('General Director', v_corp_id, 'ROLE_GD');
-END $$;
-
--- III. Chuyển sang database hr
-\c aw_hr;
-
--- 1. Bảng Kế hoạch headcount nhân sự (Theo năm/quý)
+-- 4. Bảng Kế hoạch headcount nhân sự (Theo năm/quý)
 CREATE TABLE headcount_plans (
-                                    id UUID PRIMARY KEY,
-                                    department_id UUID NOT NULL,   -- Từ Master Data
-                                    title_id UUID NOT NULL,        -- Từ Master Data (Chức danh: Developer, BA,...)
-                                    plan_year INT NOT NULL,        -- Ví dụ: 2026
-                                    target_count INT NOT NULL DEFAULT 0, -- Số lượng kỳ vọng tuyển được
-                                    current_count INT NOT NULL DEFAULT 0, -- Số lượng nhân sự hiện tại
-                                    status VARCHAR(30) DEFAULT 'DRAFT',   -- DRAFT, PENDING, APPROVED, REJECTED, RETURNED
-                                    workflow_instance_id UUID,            -- Tham chiếu ID tiến trình bên module WORKFLOW
-                                    created_by UUID NOT NULL,             -- Người lập headcount
-                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    CONSTRAINT uq_dept_title_year UNIQUE (department_id, title_id, plan_year)
+                                 id UUID PRIMARY KEY,
+                                 department_id UUID NOT NULL,   -- Từ Master Data
+                                 title_id UUID NOT NULL,        -- Từ Master Data (Chức danh: Developer, BA,...)
+                                 plan_year INT NOT NULL,        -- Ví dụ: 2026
+                                 target_count INT NOT NULL DEFAULT 0, -- Số lượng kỳ vọng tuyển được
+                                 current_count INT NOT NULL DEFAULT 0, -- Số lượng nhân sự hiện tại
+                                 status VARCHAR(30) DEFAULT 'DRAFT',   -- DRAFT, PENDING, APPROVED, REJECTED, RETURNED
+                                 workflow_instance_id UUID,            -- Tham chiếu ID tiến trình bên module WORKFLOW
+                                 created_by UUID NOT NULL,             -- Người lập headcount
+                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                 CONSTRAINT uq_dept_title_year UNIQUE (department_id, title_id, plan_year)
 );
 
--- -- 2. Bảng Yêu cầu tuyển dụng (Recruitment Request)
+-- -- 5. Bảng Yêu cầu tuyển dụng (Recruitment Request)
 -- CREATE TABLE recruitment_requests (
 --                                          id UUID PRIMARY KEY,
 --                                          headcount_plan_id UUID,        -- Tham chiếu đến định biên (Có thể NULL nếu tuyển ngoài kế hoạch)
@@ -374,7 +226,7 @@ CREATE TABLE headcount_plans (
 --                                          FOREIGN KEY (headcount_plan_id) REFERENCES hr_headcount_plans(id)
 -- );
 --
--- -- 3. Bảng Hồ sơ Tiếp nhận nhân sự mới (Onboarding Profile)
+-- -- 6. Bảng Hồ sơ Tiếp nhận nhân sự mới (Onboarding Profile)
 -- CREATE TABLE onboarding_profiles (
 --                                         id UUID PRIMARY KEY,
 --                                         recruitment_request_id UUID,   -- Thuộc yêu cầu tuyển dụng nào
@@ -399,6 +251,110 @@ CREATE TABLE headcount_plans (
 --                                      completed_at TIMESTAMP,
 --                                      FOREIGN KEY (onboarding_profile_id) REFERENCES onboarding_profiles(id) ON DELETE CASCADE
 -- );
+
+-- Chèn dữ liệu mẫu cho cấu trúc 5 cấp
+INSERT INTO org_unit_levels (level_index, level_code, level_name, can_have_headcount)
+VALUES
+    (1, 'COMPANY', 'Tổng công ty', FALSE),
+    (2, 'BRANCH', 'Chi nhánh', FALSE),
+    (3, 'DIVISION', 'Khối nghiệp vụ', TRUE),
+    (4, 'DEPARTMENT', 'Phòng ban', TRUE),
+    (5, 'TEAM', 'Đội nhóm', TRUE);
+
+-- Giả định các ID cho level_id từ 1 đến 5:
+-- 1: COMPANY, 2: BRANCH, 3: DIVISION, 4: DEPARTMENT, 5: TEAM
+
+DO $$
+DECLARE
+    v_company_id UUID := gen_random_uuid();
+    v_branch_hcm_id UUID := gen_random_uuid();
+    v_div_bo_id UUID := gen_random_uuid();
+    v_dept_hr_id UUID := gen_random_uuid();
+    v_div_tech_id UUID := gen_random_uuid();
+    v_dept_dev_id UUID := gen_random_uuid();
+BEGIN
+    -- 1. Cấp 1: Company (Root)
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_company_id, 'AW_CORP', 'Awesome Corporation', 1, NULL);
+
+    -- 2. Cấp 2: Branch
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_branch_hcm_id, 'BR_HCM', 'Chi nhánh Hồ Chí Minh', 2, v_company_id);
+
+    -- 3. Cấp 3: Division
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_div_bo_id, 'DIV_BO', 'Khối Vận hành nội bộ', 3, v_branch_hcm_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_div_tech_id, 'DIV_TECH', 'Khối Công nghệ', 3, v_branch_hcm_id);
+
+    -- 4. Cấp 4: Department
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_dept_hr_id, 'DEPT_HR', 'Phòng Nhân sự', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_ACC', 'Phòng Kế toán', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_ADMIN', 'Phòng Hành chính', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_dept_dev_id, 'DEPT_DEV', 'Phòng Phát triển Phần mềm', 4, v_div_tech_id);
+
+    -- 5. Cấp 5: Team
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES
+        (gen_random_uuid(), 'TEAM_BE', 'Team Backend', 5, v_dept_dev_id),
+        (gen_random_uuid(), 'TEAM_FE', 'Team Frontend', 5, v_dept_dev_id);
+
+    -- Thêm một nhánh khác để thấy rõ sự phân cấp
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_QA', 'Phòng Kiểm thử (QA)', 4, v_div_tech_id);
+END $$;
+
+INSERT INTO job_levels (id, code, name, rank_value)
+VALUES
+    (gen_random_uuid(), 'INT', 'Intern / Thực tập sinh', 1),
+    (gen_random_uuid(), 'FRE', 'Fresher / Sinh viên mới tốt nghiệp', 2),
+    (gen_random_uuid(), 'JUN', 'Junior / Chuyên viên', 3),
+    (gen_random_uuid(), 'MID', 'Middle / Chuyên viên chính', 4),
+    (gen_random_uuid(), 'SEN', 'Senior / Chuyên viên cao cấp', 5),
+    (gen_random_uuid(), 'MGR', 'Manager / Quản lý', 6),
+    (gen_random_uuid(), 'DIR', 'Director / Giám đốc', 7),
+    (gen_random_uuid(), 'C_LEVEL', 'C-Level / Ban điều hành', 8);
+
+DO $$
+DECLARE
+    lvl_jun UUID; lvl_sen UUID; lvl_mgr UUID; lvl_dir UUID; lvl_c_level UUID;
+BEGIN
+     -- Lấy ID của các Level
+    SELECT id INTO lvl_jun FROM job_levels WHERE code = 'JUN';
+    SELECT id INTO lvl_sen FROM job_levels WHERE code = 'SEN';
+    SELECT id INTO lvl_mgr FROM job_levels WHERE code = 'MGR';
+    SELECT id INTO lvl_dir FROM job_levels WHERE code = 'DIR';
+    SELECT id INTO lvl_c_level FROM job_levels WHERE code = 'C_LEVEL';
+
+    -- Khởi tạo chức danh Khối IT
+    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
+                                                                 (gen_random_uuid(), 'BE_DEV_JUN', 'Backend Developer (Junior)', lvl_jun),
+                                                                 (gen_random_uuid(), 'BE_DEV_SEN', 'Backend Developer (Senior)', lvl_sen),
+                                                                 (gen_random_uuid(), 'FE_DEV_JUN', 'Frontend Developer (Junior)', lvl_jun),
+                                                                 (gen_random_uuid(), 'QA_QC', 'QA/QC Engineer', lvl_jun),
+                                                                 (gen_random_uuid(), 'IT_MGR', 'IT Manager', lvl_mgr);
+
+    -- Khởi tạo chức danh Khối HR & FIN
+    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
+                                                                 (gen_random_uuid(), 'HR_EXEC', 'HR Executive', lvl_dir),
+                                                                 (gen_random_uuid(), 'HR_MGR', 'HR Manager', lvl_dir),
+                                                                 (gen_random_uuid(), 'ACC', 'Accountant', lvl_dir);
+
+    -- Khởi tạo chức danh Giám đốc và Ban điều hành
+    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
+                                                              (gen_random_uuid(), 'DIV_DIR', 'Division Director', lvl_dir),
+                                                              (gen_random_uuid(), 'BR_DIR', 'Branch Director', lvl_dir),
+                                                              (gen_random_uuid(), 'CEO', 'General Director', lvl_c_level);
+
+END $$;
 
 -- III. Chuyển sang database workflow
 \c aw_workflow;

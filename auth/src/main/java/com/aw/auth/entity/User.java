@@ -13,8 +13,7 @@ public class User {
     private String username;
     private String email;
     private String password;
-    private String firstName;
-    private String lastName;
     private Boolean isActive;
+    private UUID employeeId;
     private Set<String> roles; // Sẽ được xử lý map qua MyBatis ResultMap
 }

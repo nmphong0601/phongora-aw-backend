@@ -4,7 +4,10 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+        "com.aw.auth",
+        "com.aw.common.security"  // Ép Spring quét thêm các bean bảo mật dùng chung
+})
 @MapperScan("com.aw.auth.mapper")
 public class AuthServiceApplication {
     public static void main(String[] args) {

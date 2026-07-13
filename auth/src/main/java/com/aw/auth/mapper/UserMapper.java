@@ -20,16 +20,19 @@ public interface UserMapper {
     boolean existsByEmail(@Param("email") String email);
 
     // User CRUD
+    // Đếm số lượng user để kiểm tra xem đã cần seed dữ liệu chưa
+    @Select("SELECT COUNT(1) FROM users")
+    int countUsers();
     void insertUser(User user);
     User findById(@Param("id") UUID id);
     void updateUser(User user);
     void deleteUserById(@Param("id") UUID id);
 
     // User -> Role (Sử dụng UUID)
-    void insertUserRole(@Param("userId") UUID userId, @Param("roleName") String roleName);
-    void deleteUserRole(@Param("userId") UUID userId, @Param("roleName") String roleName);
-    void deleteAllRolesByUserId(@Param("userId") UUID userId);
-    List<String> findRolesByUserId(@Param("userId") UUID userId);
+    void insertUserRole(@Param("userName") String userName, @Param("roleName") String roleName);
+    void deleteUserRole(@Param("userName") String userName, @Param("roleName") String roleName);
+    void deleteAllRolesByUserName(@Param("userName") String userName);
+    List<String> findRolesByUserName(@Param("userName") String userName);
 
     // Role -> Menu (Chỉ sử dụng String)
     void insertRoleMenu(RoleMenu roleMenu);
@@ -38,21 +41,21 @@ public interface UserMapper {
     List<RoleMenu> findMenuPrivilegesByRoleName(@Param("roleName") String roleName);
 
     // Group Roles
-    void insertGroupRole(@Param("groupId") Integer groupId, @Param("roleName") String roleName);
-    void deleteGroupRole(@Param("groupId") Integer groupId, @Param("roleName") String roleName);
-    List<String> findRolesByGroupId(@Param("groupId") Integer groupId);
+    void insertGroupRole(@Param("groupName") String groupId, @Param("roleName") String roleName);
+    void deleteGroupRole(@Param("groupName") String groupId, @Param("roleName") String roleName);
+    List<String> findRolesByGroupName(@Param("groupName") String groupName);
 
     // Lấy trực tiếp các Roles của User thông qua bảng user_roles
     @Select("SELECT r.name " +
             "FROM roles r " +
-            "JOIN user_roles ur ON r.id = ur.role_id " +
-            "WHERE ur.user_id = #{userId}")
-    Set<String> findRoleNamesByUserId(@Param("userId") UUID userId);
+            "JOIN user_roles ur ON r.name = ur.role_name " +
+            "WHERE ur.user_name = #{username}")
+    Set<String> findRoleNamesByUserName(@Param("username") String username);
 
     // (Tùy chọn) Lấy các Roles của một Group nếu bạn cần chức năng quản trị UI
     @Select("SELECT r.name " +
             "FROM roles r " +
-            "JOIN group_roles gr ON r.id = gr.role_id " +
-            "WHERE gr.group_id = #{groupId}")
-    Set<String> findRoleNamesByGroupId(@Param("groupId") Integer groupId);
+            "JOIN group_roles gr ON r.name = gr.role_name " +
+            "WHERE gr.group_name = #{groupName}")
+    Set<String> findRoleNamesByGroupName(@Param("groupName") String groupName);
 }

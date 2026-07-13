@@ -2,12 +2,13 @@ package com.aw.auth.service;
 
 import com.aw.auth.entity.RoleMenu;
 import com.aw.auth.entity.User;
-import com.aw.auth.entity.UserRole;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
 public interface UserService {
     // ==================== USER CRUD ====================
     User createUser(User user);
@@ -18,13 +19,13 @@ public interface UserService {
 
     // ==================== USER -> ROLE ====================
     // Gán Role cho User
-    void assignRoleToUser(UUID userId, String roleName);
+    void assignRoleToUser(String userName, String roleName);
 
     // Thu hồi Role của User
-    void removeRoleFromUser(UUID userId, String roleName);
+    void removeRoleFromUser(String userName, String roleName);
 
     // Lấy danh sách các Role mà User đang giữ
-    List<String> getUserRoles(UUID userId);
+    List<String> getUserRoles(String userName);
 
     // ==================== ROLE -> MENU (PRIVILEGES) ====================
     // Cấu hình đặc quyền cho Role trên một Menu
@@ -41,11 +42,11 @@ public interface UserService {
 
     // ==================== GROUP ROLES (Role Bundles) ====================
     // Gán một quyền vào một Group cụ thể
-    void assignRoleToGroup(Integer groupId, String roleName);
+    void assignRoleToGroup(String groupName, String roleName);
 
     // Rút một quyền ra khỏi Group
-    void removeRoleFromGroup(Integer groupId, String roleName);
+    void removeRoleFromGroup(String groupName, String roleName);
 
     // Lấy danh sách tất cả các quyền nằm trong một Group
-    List<String> getGroupRoles(Integer groupId);
+    List<String> getGroupRoles(String groupName);
 }

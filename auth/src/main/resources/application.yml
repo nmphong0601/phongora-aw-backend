@@ -26,7 +26,7 @@ jwt:
 
 # Cấu hình MyBatis
 mybatis:
-  mapper-locations: classpath:mappers/*.xml
+  mapper-locations: classpath:mapper/*.xml
   type-handlers-package: com.aw.common.config.type
   configuration:
     # Tự động chuyển đổi tên cột (ví dụ: is_active -> isActive, full_name -> fullName)
@@ -40,3 +40,7 @@ logging:
 springdoc:
   api-docs:
     path: /api-docs
+
+service:
+  hr:
+    url: http://localhost:8088

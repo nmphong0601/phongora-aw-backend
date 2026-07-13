@@ -2,7 +2,6 @@ package com.aw.auth.service.impl;
 
 import com.aw.auth.entity.RoleMenu;
 import com.aw.auth.entity.User;
-import com.aw.auth.entity.UserRole;
 import com.aw.auth.mapper.UserMapper;
 import com.aw.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -49,26 +48,27 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(UUID id) {
-        userMapper.deleteAllRolesByUserId(id);
-        userMapper.deleteUserById(id);
+        User user = userMapper.findById(id);
+        userMapper.deleteAllRolesByUserName(user.getUsername());
+        userMapper.deleteUserById(user.getId());
     }
 
     // ==================== USER -> ROLE ====================
     @Override
     @Transactional
-    public void assignRoleToUser(UUID userId, String roleName) {
-        userMapper.insertUserRole(userId, roleName);
+    public void assignRoleToUser(String userName, String roleName) {
+        userMapper.insertUserRole(userName, roleName);
     }
 
     @Override
     @Transactional
-    public void removeRoleFromUser(UUID userId, String roleName) {
-        userMapper.deleteUserRole(userId, roleName);
+    public void removeRoleFromUser(String userName, String roleName) {
+        userMapper.deleteUserRole(userName, roleName);
     }
 
     @Override
-    public List<String> getUserRoles(UUID userId) {
-        return userMapper.findRolesByUserId(userId);
+    public List<String> getUserRoles(String userName) {
+        return userMapper.findRolesByUserName(userName);
     }
 
     // ==================== ROLE -> MENU (PRIVILEGES) ====================
@@ -98,18 +98,18 @@ public class UserServiceImpl implements UserService {
     // ==================== GROUP ROLES ====================
     @Override
     @Transactional
-    public void assignRoleToGroup(Integer groupId, String roleName) {
-        userMapper.insertGroupRole(groupId, roleName);
+    public void assignRoleToGroup(String groupName, String roleName) {
+        userMapper.insertGroupRole(groupName, roleName);
     }
 
     @Override
     @Transactional
-    public void removeRoleFromGroup(Integer groupId, String roleName) {
-        userMapper.deleteGroupRole(groupId, roleName);
+    public void removeRoleFromGroup(String groupName, String roleName) {
+        userMapper.deleteGroupRole(groupName, roleName);
     }
 
     @Override
-    public List<String> getGroupRoles(Integer groupId) {
-        return userMapper.findRolesByGroupId(groupId);
+    public List<String> getGroupRoles(String groupName) {
+        return userMapper.findRolesByGroupName(groupName);
     }
 }

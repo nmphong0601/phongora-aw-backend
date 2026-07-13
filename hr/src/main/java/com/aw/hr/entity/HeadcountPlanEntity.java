@@ -12,7 +12,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HeadcountPlan {
+public class HeadcountPlanEntity {
     private UUID id;
     private UUID departmentId;
     private UUID titleId;

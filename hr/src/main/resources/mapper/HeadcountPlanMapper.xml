@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aw.hr.mapper.HeadcountPlanMapper">
-    <resultMap id="HeadcountPlanResultMap" type="com.aw.hr.entity.HeadcountPlan">
+    <resultMap id="HeadcountPlanResultMap" type="com.aw.hr.entity.HeadcountPlanEntity">
         <id property="id" column="id"/>
         <result property="departmentId" column="department_id"/>
         <result property="titleId" column="title_id"/>

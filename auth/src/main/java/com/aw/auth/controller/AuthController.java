@@ -1,6 +1,10 @@
 package com.aw.auth.controller;
 
-import com.aw.auth.dto.*;
+import com.aw.auth.dto.req.LoginRequest;
+import com.aw.auth.dto.req.RefreshTokenRequest;
+import com.aw.auth.dto.req.RegisterRequest;
+import com.aw.auth.dto.res.AuthResponse;
+import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.service.AuthService;
 import com.aw.auth.util.JwtProvider;
@@ -20,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -71,7 +74,7 @@ public class AuthController {
         }
 
         // 2. Lấy Roles thông qua Service
-        Set<String> roleNames = authService.getRolesByUserId(user.getId());
+        Set<String> roleNames = authService.getRolesByUserName(user.getUsername());
 
         String roleString = String.join(",", roleNames);
         String token = jwtProvider.generateToken(user.getId().toString(), roleString);
@@ -80,7 +83,6 @@ public class AuthController {
                 "accessToken", token,
                 "tokenType", "Bearer",
                 "userId", user.getId().toString(),
-                "fullName", user.getFirstName() + " " + user.getLastName(),
                 "roles", roleNames
         ));
     }
