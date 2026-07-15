@@ -59,16 +59,16 @@ public class DatabaseSeeder implements CommandLineRunner {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                HrEmployeeResponse hrData = response.getBody();
+                HrEmployeeResponse hrEmployeeData = response.getBody();
 
                 // Sinh UUID thủ công cho User trước khi gọi MyBatis
                 UUID newUserId = UUID.randomUUID();
 
                 User newUser = new User();
                 newUser.setId(newUserId);
-                newUser.setUsername(hrData.getEmployeeCode());
+                newUser.setUsername(hrEmployeeData.getEmployeeCode());
                 newUser.setPassword(passwordEncoder.encode("123456"));
-                newUser.setEmployeeId(hrData.getEmployeeId());
+                newUser.setEmployeeId(hrEmployeeData.getId());
                 newUser.setIsActive(true);
 
                 // Lưu bằng MyBatis Mapper
@@ -79,7 +79,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 userMapper.insertUserRole(newUser.getUsername(), roleName);
 
                 log.info("Đã tạo thành công {}: {} liên kết với Employee ID: {}",
-                        titleCode, newUser.getUsername(), hrData.getEmployeeId());
+                        titleCode, newUser.getUsername(), hrEmployeeData.getId());
             }
         } catch (Exception e) {
             log.error("Lỗi khi gọi HR Service để khởi tạo {}: {}", titleCode, e.getMessage());

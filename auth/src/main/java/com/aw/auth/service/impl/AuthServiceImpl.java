@@ -4,16 +4,19 @@ import com.aw.auth.dto.req.LoginRequest;
 import com.aw.auth.dto.req.RefreshTokenRequest;
 import com.aw.auth.dto.req.RegisterRequest;
 import com.aw.auth.dto.res.AuthResponse;
+import com.aw.auth.dto.res.HrEmployeeResponse;
 import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.mapper.UserMapper;
-import com.aw.auth.security.JwtService;
 import com.aw.auth.service.AuthService;
+import com.aw.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -21,9 +24,13 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private final RestTemplate restTemplate;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+
+    @Value("${service.hr.url:http://localhost:8088}")
+    private String hrServiceUrl;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
@@ -80,7 +87,13 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid username or password");
         }
 
-        String accessToken = jwtService.generateAccessToken(user.getUsername(), user.getRoles());
+        HrEmployeeResponse employeeInfo = getEmployeeInfo(user);
+        String accessToken = jwtService.generateAccessToken(
+                user.getUsername(),
+                user.getId(),
+                user.getEmployeeId(),
+                employeeInfo.getOrgUnitCode(),
+                user.getRoles());
         String refreshToken = jwtService.generateToken(user.getUsername(), new HashMap<>(), refreshExpiration);
 
         return AuthResponse.builder()
@@ -92,12 +105,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        String username = jwtService.extractUsername(request.getRefreshToken());
+        String username = jwtService.getUsernameFromToken(request.getRefreshToken());
         User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid token session"));
+        HrEmployeeResponse employeeInfo = getEmployeeInfo(user);
 
-        if (jwtService.isTokenValid(request.getRefreshToken(), user.getUsername())) {
-            String newAccessToken = jwtService.generateAccessToken(user.getUsername(), user.getRoles());
+        if (jwtService.validateToken(request.getRefreshToken())) {
+            String newAccessToken = jwtService.generateAccessToken(
+                    user.getUsername(),
+                    user.getId(),
+                    user.getEmployeeId(),
+                    employeeInfo.getOrgUnitCode(),
+                    user.getRoles());
             return AuthResponse.builder()
                     .accessToken(newAccessToken)
                     .refreshToken(request.getRefreshToken())
@@ -117,5 +136,20 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .build();
+    }
+
+    private HrEmployeeResponse getEmployeeInfo(User user) {
+        String endpoint = String.format("%s/api/v1/employees/%s", hrServiceUrl, user.getEmployeeId());
+        ResponseEntity<HrEmployeeResponse> response = restTemplate.getForEntity(
+                endpoint,
+                HrEmployeeResponse.class
+        );
+
+        HrEmployeeResponse hrEmployeeData = new HrEmployeeResponse();
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            hrEmployeeData = response.getBody();
+        }
+
+        return hrEmployeeData;
     }
 }

@@ -4,6 +4,16 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aw.hr.mapper.EmployeeMapper">
+    <resultMap id="EmployeeResultMap" type="com.aw.hr.dto.res.EmployeeResponse">
+        <id property="id" column="id"/>
+        <result property="fullName" column="full_name"/>
+        <result property="employeeCode" column="employee_code"/>
+        <result property="orgUnitCode" column="org_unit_code"/>
+        <result property="titleCode" column="title_code"/>
+        <result property="employmentStatus" column="employment_status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
     <insert id="insertSeedEmployee" parameterType="com.aw.hr.entity.EmployeeEntity">
         INSERT INTO employees (id, employee_code, full_name, org_unit_code, title_code, employment_status)
         VALUES (
@@ -15,4 +25,10 @@
                 'ACTIVE'
                );
     </insert>
+
+    <select id="findByCode" resultMap="EmployeeResultMap">
+        SELECT id, employee_code, full_name, org_unit_code, title_code, employment_status, created_at
+        FROM employees
+        WHERE employee_code = #{code}
+    </select>
 </mapper>

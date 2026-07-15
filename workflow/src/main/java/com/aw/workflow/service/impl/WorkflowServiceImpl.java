@@ -1,5 +1,6 @@
 package com.aw.workflow.service.impl;
 
+import com.aw.common.event.WorkflowStartEvent;
 import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
@@ -24,16 +25,27 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final TaskService taskService;
 
     @Override
-    public void startWorkflow(String proposalId) {
-        log.info("[Camunda] Khởi động Instance mới cho quy trình 'proposal-approval-process' cho ID: {}", proposalId);
+    public void startWorkflow(WorkflowStartEvent event) {
+        log.info("[Camunda] Khởi động Instance mới cho quy trình {} cho ID: {}",
+                event.getProcessDefinitionKey(),
+                event.getBusinessKey()
+        );
 
-        // Thiết lập biến môi trường để truyền vào luồng BPMN
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("proposalId", proposalId);
+        // 1. Retrieve the variables injected by the producer
+        Map<String, Object> variables = event.getVariables();
 
-        // Khởi chạy quy trình bằng Business Key là proposalId
-        ProcessInstance pi = runtimeService.startProcessInstanceByKey("proposal-approval-process", proposalId, variables);
-        log.info("[Camunda] Khởi tạo thành công Instance ID: {}, Trạng thái: Hoạt động", pi.getId());
+        // 2. Automatically inject standard system variables (so you don't have to pass them manually every time)
+        variables.put("initiatorId", event.getRequesterId());
+        variables.put("initiatorName", event.getRequesterName());
+
+        // 3. Start the process dynamically based on the definition key
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
+                event.getProcessDefinitionKey(),
+                event.getBusinessKey(),
+                variables
+        );
+
+        log.info("[Camunda] Khởi tạo thành công Instance ID: {}, Trạng thái: Hoạt động", processInstance.getId());
     }
 
     @Override

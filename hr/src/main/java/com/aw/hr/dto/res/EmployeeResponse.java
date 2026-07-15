@@ -1,11 +1,10 @@
-package com.aw.auth.dto.res;
+package com.aw.hr.dto.res;
 
 import lombok.Data;
 import java.util.UUID;
 
-// DTO nhận về (Response)
 @Data
-public class HrEmployeeResponse {
+public class EmployeeResponse {
     private UUID Id;
     private String employeeCode;
     private String fullName;

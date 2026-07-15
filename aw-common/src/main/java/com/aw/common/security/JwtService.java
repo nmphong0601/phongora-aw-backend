@@ -70,12 +70,13 @@ public class JwtService {
     /**
      * Hàm sinh Access Token
      */
-    public String generateAccessToken(String username, UUID userId, UUID employeeId, Set<String> roles) {
+    public String generateAccessToken(String username, UUID userId, UUID employeeId, String departmentCode, Set<String> roles) {
         Map<String, Object> claims = new HashMap<>();
 
         // Chuyển UUID thành String để tránh lỗi rườm rà khi Jackson serialize JSON
         claims.put("userId", userId != null ? userId.toString() : null);
         claims.put("employeeId", employeeId != null ? employeeId.toString() : null);
+        claims.put("orgUnitCode", departmentCode != null && !departmentCode.isEmpty() ? departmentCode : null);
         claims.put("roles", roles);
 
         return generateToken(username, claims, jwtExpiration);

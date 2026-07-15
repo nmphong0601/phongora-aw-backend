@@ -4,6 +4,7 @@ import com.aw.common.exception.AppException;
 import com.aw.common.exception.ErrorCode;
 import com.aw.hr.dto.req.CreateSeedEmployeeRequest;
 import com.aw.hr.dto.res.CreateSeedEmployeeResponse;
+import com.aw.hr.dto.res.EmployeeResponse;
 import com.aw.hr.entity.EmployeeEntity;
 import com.aw.hr.mapper.EmployeeMapper;
 import com.aw.hr.mapper.SequenceMapper;
@@ -68,9 +69,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         // 4. Trả kết quả về cho client (Auth Service)
         CreateSeedEmployeeResponse response = new CreateSeedEmployeeResponse();
-        response.setEmployeeId(entity.getId());
+        response.setId(entity.getId());
         response.setEmployeeCode(entity.getEmployeeCode());
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public EmployeeResponse findByCode(String code) {
+        return employeeMapper.getByCode(code);
     }
 }

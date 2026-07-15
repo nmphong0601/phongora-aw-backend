@@ -19,8 +19,12 @@ public class UserPrincipal implements UserDetails {
     private UUID userId;
     private String username;
 
-    // Khóa ngoại logic liên kết với bảng hr_employees bên module HR
+    // Khóa ngoại logic liên kết với bảng employees bên module HR
     private UUID employeeId;
+
+    private String employeeCode;
+
+    private String orgUnitCode;
 
     // Mật khẩu (thường để trống hoặc null khi xác thực bằng JWT, vì JWT không mang mật khẩu)
     private String password;

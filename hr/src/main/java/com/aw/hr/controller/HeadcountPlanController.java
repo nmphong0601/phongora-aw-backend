@@ -1,5 +1,6 @@
 package com.aw.hr.controller;
 
+import com.aw.common.response.ApiResponse;
 import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
 import com.aw.hr.dto.res.CreateHeadcountPlanResponse;
 import com.aw.hr.dto.res.CreateSeedEmployeeResponse;
@@ -20,8 +21,8 @@ public class HeadcountPlanController {
     private final HeadcountPlanService headcountPlanService;
 
     @PostMapping("/create")
-    public ResponseEntity<CreateHeadcountPlanResponse> seedEmployee(@RequestBody CreateHeadcountPlanRequest request) {
+    public ApiResponse<CreateHeadcountPlanResponse> create(@RequestBody CreateHeadcountPlanRequest request) {
         CreateHeadcountPlanResponse response = headcountPlanService.createHeadcountPlan(request);
-        return ResponseEntity.ok(response);
+        return ApiResponse.success( response);
     }
 }

@@ -3,13 +3,11 @@ package com.aw.hr.controller;
 import com.aw.common.response.ApiResponse;
 import com.aw.hr.dto.req.CreateSeedEmployeeRequest;
 import com.aw.hr.dto.res.CreateSeedEmployeeResponse;
+import com.aw.hr.dto.res.EmployeeResponse;
 import com.aw.hr.service.EmployeeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/employees")
@@ -21,6 +19,12 @@ public class EmployeeController {
     @PostMapping("/seed")
     public ApiResponse<CreateSeedEmployeeResponse> seedEmployee(@RequestBody CreateSeedEmployeeRequest request) {
         CreateSeedEmployeeResponse response = employeeService.createSeedEmployee(request);
+        return ApiResponse.success(response);
+    }
+
+    @GetMapping("/{code}")
+    public ApiResponse<EmployeeResponse> getEmployeeById(@PathVariable String code) {
+        EmployeeResponse response = employeeService.findByCode(code);
         return ApiResponse.success(response);
     }
 }

@@ -5,6 +5,6 @@ import java.util.UUID;
 
 @Data
 public class CreateSeedEmployeeResponse {
-    private UUID employeeId;
+    private UUID Id;
     private String employeeCode;
 }

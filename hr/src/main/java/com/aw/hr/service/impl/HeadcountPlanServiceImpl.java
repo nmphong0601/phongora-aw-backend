@@ -1,6 +1,7 @@
 package com.aw.hr.service.impl;
 
 import com.aw.common.event.ProposalEvent;
+import com.aw.common.event.WorkflowStartEvent;
 import com.aw.common.security.SecurityUtils;
 import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
 import com.aw.hr.dto.req.CreateSeedEmployeeRequest;
@@ -21,6 +22,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -28,8 +31,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class HeadcountPlanServiceImpl implements HeadcountPlanService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private static final String TOPIC = "hr-events";
-    private static final String HEADCOUNT_PLAN_PROPOSAL_ID = "headcount_plan_proposal";
+    private static final String TOPIC_WORKFLOW_START = "workflow-start-commands";
 
     private final HeadcountPlanMapper headcountPlanMapper;
 
@@ -61,10 +63,20 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
         response.setCurrentCount(entity.getCurrentCount());
         response.setStatus(entity.getStatus());
 
-        String currentUsername = SecurityUtils.getCurrentUsername();
-        ProposalEvent event = new ProposalEvent(HEADCOUNT_PLAN_PROPOSAL_ID, "CREATED", currentUsername);
-        kafkaTemplate.send(TOPIC, event.getProposalId(), event);
-        log.info("Message sent to Kafka Topic [{}]: {}", TOPIC, event);
+        Map<String, Object> processVars = new HashMap<>();
+        processVars.put("orgUnitCode", SecurityUtils.getCurrentOrgUnitCode());
+        processVars.put("requester", SecurityUtils.getCurrentEmployeeCode());
+        processVars.put("action", "CREATE");
+
+        WorkflowStartEvent event = WorkflowStartEvent.builder()
+                .processDefinitionKey("headcount_plan_proposal") // Tell Camunda which flow to run
+                .businessKey(entity.getId().toString())
+                .requesterId(SecurityUtils.getCurrentUserId().toString())
+                .requesterName(SecurityUtils.getCurrentUsername())
+                .variables(processVars)
+                .build();
+
+        kafkaTemplate.send(TOPIC_WORKFLOW_START, event.getBusinessKey(), event);
 
         return response;
     }

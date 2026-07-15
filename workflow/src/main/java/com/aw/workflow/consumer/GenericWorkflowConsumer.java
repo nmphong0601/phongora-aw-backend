@@ -1,6 +1,5 @@
 package com.aw.workflow.consumer;
 
-import com.aw.common.event.ProposalEvent;
 import com.aw.common.event.WorkflowStartEvent;
 import com.aw.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
@@ -8,18 +7,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
-public class ProposalConsumer {
+public class GenericWorkflowConsumer {
 
     private final WorkflowService workflowService;
 
-    @KafkaListener(topics = "proposal-events", groupId = "workflow-group")
-    public void consume(WorkflowStartEvent event) {
-        log.info("Received Event from Kafka!");
-        log.info("Proposal ID: {}", event.getProcessDefinitionKey());
-        log.info("Variables: {}", event.getVariables());
+    @KafkaListener(
+            topics = "workflow-start-events",
+            groupId = "workflow-engine-group"
+    )
+    public void consumeWorkflowStartEvent(WorkflowStartEvent event) {
+        log.info("Received request to start process: {} for Business Key: {}",
+                event.getProcessDefinitionKey(), event.getBusinessKey());
 
         workflowService.startWorkflow(event);
     }
