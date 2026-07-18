@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.aw.auth",
         "com.aw.common.security"  // Ép Spring quét thêm các bean bảo mật dùng chung
 })
+//@SpringBootApplication
 @MapperScan("com.aw.auth.mapper")
 public class AuthServiceApplication {
     public static void main(String[] args) {

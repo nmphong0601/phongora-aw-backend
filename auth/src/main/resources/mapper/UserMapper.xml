@@ -10,7 +10,7 @@
         <result property="password" column="password"/>
         <result property="isActive" column="is_active"/>
         <collection property="roles" ofType="string" javaType="java.util.HashSet">
-            <result column="role"/>
+            <result column="role_name"/>
         </collection>
     </resultMap>
 
@@ -27,9 +27,9 @@
     </resultMap>
 
     <select id="findByUsername" resultMap="UserResultMap">
-        SELECT u.*, ur.role
+        SELECT u.*, ur.role_name
         FROM users u
-        LEFT JOIN user_roles ur ON u.name = ur.user_name
+        LEFT JOIN user_roles ur ON u.username = ur.user_name
         WHERE u.username = #{username}
     </select>
 

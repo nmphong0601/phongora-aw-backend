@@ -23,12 +23,10 @@
     </properties>
 
     <modules>
-        <module>aw-common</module>
-        <module>aw-gateway</module>
+        <module>common</module>
+        <module>gateway</module>
         <module>auth</module>
-        <module>proposal</module>
         <module>workflow</module>
-        <module>data</module>
         <module>document</module>
         <module>finance</module>
         <module>notification</module>
@@ -46,7 +44,7 @@
             </dependency>
             <dependency>
                 <groupId>com.phongora-aw</groupId>
-                <artifactId>aw-common</artifactId>
+                <artifactId>common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

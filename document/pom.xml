@@ -21,7 +21,7 @@
         <!-- Module Common (chứa DTO và cấu hình chung) -->
         <dependency>
             <groupId>com.phongora-aw</groupId>
-            <artifactId>aw-common</artifactId>
+            <artifactId>common</artifactId>
         </dependency>
 
         <!-- JasperReports để xuất PDF -->

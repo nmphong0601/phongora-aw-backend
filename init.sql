@@ -1,11 +1,9 @@
 -- File script này sẽ được tự động thực thi BỞI USER POSTGRES khi container chạy lần ĐẦU TIÊN.
 -- Tạo các database tách biệt cho từng Microservice để đảm bảo tính độc lập.
 
-CREATE DATABASE aw_master_data;
 CREATE DATABASE aw_auth;
 CREATE DATABASE aw_hr;
 CREATE DATABASE aw_workflow;
-CREATE DATABASE aw_proposal;
 CREATE DATABASE aw_document;
 CREATE DATABASE aw_finance;
 

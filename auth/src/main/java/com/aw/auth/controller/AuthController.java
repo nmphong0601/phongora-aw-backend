@@ -8,6 +8,8 @@ import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.service.AuthService;
 import com.aw.auth.util.JwtProvider;
+import com.aw.common.security.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +18,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +27,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints phục vụ đăng ký, đăng nhập và quản lý phiên (Session)")
 public class AuthController {
@@ -35,6 +41,10 @@ public class AuthController {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final JwtService jwtService;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @PostMapping("/register")
     @Operation(summary = "Đăng ký tài khoản mới", description = "Tạo mới một User với quyền mặc định là ROLE_USER. Kiểm tra trùng lặp Username và Email.")
@@ -109,9 +119,37 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Token không hợp lệ hoặc đã hết hạn", content = @Content)
     })
     public ResponseEntity<String> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        // For standard stateless JWT architectures, clients discard tokens on logout.
-        // Optional: Implement a Redis blocklist here to invalidate active tokens early.
-        return ResponseEntity.ok("Logged out successfully");
+        /// 1. Kiểm tra header hợp lệ
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Invalid authorization header");
+        }
+
+        String token = authHeader.substring(7);
+
+        try {
+            // 2. Lấy thời gian hết hạn của token
+            long remainingTime = jwtService.getRemainingTime(token);
+
+            // 3. Nếu token còn hạn, đưa vào Redis Blocklist
+            if (remainingTime > 0) {
+                // Key format: "blocklist:{token}", Value: "true"
+                redisTemplate.opsForValue().set(
+                        "blocklist:" + token,
+                        "true",
+                        remainingTime,
+                        TimeUnit.MILLISECONDS
+                );
+            }
+
+            // Note: Client vẫn phải tự xóa token ở LocalStorage/Cookies
+            return ResponseEntity.ok("Logged out successfully");
+
+        } catch (ExpiredJwtException e) {
+            // Nếu token đã hết hạn sẵn thì không cần chặn nữa, vẫn báo logout thành công
+            return ResponseEntity.ok("Logged out successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
+        }
     }
 
     @GetMapping("/me")

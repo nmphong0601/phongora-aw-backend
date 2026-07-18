@@ -21,7 +21,7 @@
         <!-- Module Common -->
         <dependency>
             <groupId>com.phongora-aw</groupId>
-            <artifactId>aw-common</artifactId>
+            <artifactId>common</artifactId>
         </dependency>
     </dependencies>
 

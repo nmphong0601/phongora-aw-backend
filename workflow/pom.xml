@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>com.phongora-aw</groupId>
-            <artifactId>aw-common</artifactId>
+            <artifactId>common</artifactId>
         </dependency>
 
         <!-- Camunda Engine Spring Boot Starter -->
