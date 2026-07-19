@@ -74,6 +74,9 @@ spring:
           uri: http://localhost:8087
           predicates:
             - Path=/camunda/**
+          filters:
+            # Bắt buộc để giải quyết triệt để lỗi 302 Redirect bị mất cổng 8080
+            - PreserveHostHeader
 
         # Route cho HR
         - id: hr-route

@@ -26,16 +26,29 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh-token",
-            "/api/v1/auth/api-docs",
-            "/camunda"
+            "/api/v1/auth/api-docs"
     );
 
     public AuthenticationFilter(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
     }
 
-    private final Predicate<ServerHttpRequest> isSecured = request -> openEndpoints.stream()
-            .noneMatch(uri -> request.getURI().getPath().contains(uri));
+//    private final Predicate<ServerHttpRequest> isSecured = request -> openEndpoints.stream()
+//            .noneMatch(uri -> request.getURI().getPath().contains(uri));
+    private final Predicate<ServerHttpRequest> isSecured = request -> {
+        String path = request.getURI().getPath();
+
+        // Nếu bắt đầu bằng /camunda -> Bỏ qua kiểm tra (trả về false vì nó KHÔNG PHẢI là secured)
+        if (path.startsWith("/camunda")) {
+            return false;
+        }
+
+        // Nếu khớp với các endpoint công khai khác -> Bỏ qua kiểm tra (trả về false)
+        boolean isOpenEndpoint = openEndpoints.stream().anyMatch(path::contains);
+
+        // Nếu không nằm trong 2 trường hợp trên -> Phải kiểm tra bảo mật (trả về true)
+        return !isOpenEndpoint;
+    };
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

@@ -31,13 +31,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                // BẮT BUỘC TẮT Ở CẢ CÁC SERVICE MVC BÊN DƯỚI
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 // Không sử dụng Session vì chúng ta dùng JWT (Stateless)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Mở API đăng nhập và đăng ký
                         .requestMatchers("/api/v1/login", "/api/v1/register").permitAll()
                         .requestMatchers("/api-docs", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/camunda", "/camunda/**").permitAll()
+                        .requestMatchers("/camunda","/camunda-welcome","/camunda/**").permitAll()
                         // Các API khác yêu cầu xác thực (nếu gọi trực tiếp không qua Gateway)
                         .anyRequest().authenticated()
                 );

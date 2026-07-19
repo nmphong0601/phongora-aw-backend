@@ -1,110 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                  id="Definitions_1"
-                  targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Camunda Modeler"
-                  exporterVersion="5.0.0">
-
-  <!-- Định nghĩa quy trình có Key duy nhất là "proposal-approval-process" -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.48.0">
   <bpmn:process id="proposal-approval-process" name="Quy trình phê duyệt công văn" isExecutable="true">
-
-    <!-- Điểm bắt đầu quy trình -->
     <bpmn:startEvent id="StartEvent_1" name="Yêu cầu phê duyệt được tạo">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-
     <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Activity_Manager_Review" />
-
-    <!-- 1. USER TASK: Quản lý xem xét -->
     <bpmn:userTask id="Activity_Manager_Review" name="Manager xem xét" camunda:assignee="Direct Manager">
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:userTask>
-
     <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Manager_Review" targetRef="Gateway_Decision" />
-
-    <!-- Cổng rẽ nhánh kiểm tra biến "approved" -->
     <bpmn:exclusiveGateway id="Gateway_Decision" name="Kết quả phê duyệt?">
       <bpmn:incoming>Flow_2</bpmn:incoming>
       <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
       <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-
-    <!-- Nhánh ĐƯỢC PHÊ DUYỆT -> Chuyển sang Service Task xử lý tự động -->
     <bpmn:sequenceFlow id="Flow_Approved" name="Đồng ý" sourceRef="Gateway_Decision" targetRef="Activity_Complete_Workflow">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-
-    <!-- Nhánh BỊ TỪ CHỐI -> Kết thúc quy trình ngay lập tức -->
     <bpmn:sequenceFlow id="Flow_Rejected" name="Từ chối" sourceRef="Gateway_Decision" targetRef="Event_Workflow_Rejected">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == false}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-
-    <!-- 2. SERVICE TASK: Tự động chạy class Java "workflowCompletedDelegate" để gửi Event tới Kafka -->
     <bpmn:serviceTask id="Activity_Complete_Workflow" name="Báo cho Document Service" camunda:delegateExpression="${workflowCompletedDelegate}">
       <bpmn:incoming>Flow_Approved</bpmn:incoming>
       <bpmn:outgoing>Flow_4</bpmn:outgoing>
     </bpmn:serviceTask>
-
     <bpmn:sequenceFlow id="Flow_4" sourceRef="Activity_Complete_Workflow" targetRef="Event_Workflow_Approved" />
-
-    <!-- Điểm kết thúc thành công -->
     <bpmn:endEvent id="Event_Workflow_Approved" name="Quy trình hoàn tất (Đã duyệt)">
       <bpmn:incoming>Flow_4</bpmn:incoming>
     </bpmn:endEvent>
-
-    <!-- Điểm kết thúc thất bại -->
     <bpmn:endEvent id="Event_Workflow_Rejected" name="Quy trình kết thúc (Bị Từ Chối)">
       <bpmn:incoming>Flow_Rejected</bpmn:incoming>
     </bpmn:endEvent>
-
   </bpmn:process>
-
-  <!-- Layout hiển thị đồ họa trực quan (Camunda Engine cần cấu trúc này để render trên Modeler) -->
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="proposal-approval-process">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="135" width="75" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1_di" bpmnElement="Activity_Manager_Review">
-        <dc:Bounds x="270" y="137" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1_di" bpmnElement="Gateway_Decision" isMarkerVisible="true">
-        <dc:Bounds x="425" y="152" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_2_di" bpmnElement="Activity_Complete_Workflow">
-        <dc:Bounds x="530" y="137" width="100" height="80" />
+        <dc:Bounds x="270" y="77" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1_di" bpmnElement="Event_Workflow_Approved">
-        <dc:Bounds x="692" y="159" width="36" height="36" />
+        <dc:Bounds x="952" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="925" y="348" width="89" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_2_di" bpmnElement="Event_Workflow_Rejected">
-        <dc:Bounds x="432" y="272" width="36" height="36" />
+        <dc:Bounds x="432" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="407" y="488" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_2_di" bpmnElement="Activity_Complete_Workflow">
+        <dc:Bounds x="690" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1_di" bpmnElement="Gateway_Decision" isMarkerVisible="true">
+        <dc:Bounds x="425" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="355" y="306.5" width="60" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
-        <di:waypoint x="215" y="177" />
-        <di:waypoint x="270" y="177" />
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
-        <di:waypoint x="370" y="177" />
-        <di:waypoint x="425" y="177" />
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="450" y="117" />
+        <di:waypoint x="450" y="295" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_Approved">
-        <di:waypoint x="475" y="177" />
-        <di:waypoint x="530" y="177" />
+        <di:waypoint x="475" y="320" />
+        <di:waypoint x="690" y="320" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="568" y="295" width="35" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_Rejected">
-        <di:waypoint x="450" y="202" />
-        <di:waypoint x="450" y="272" />
+        <di:waypoint x="450" y="345" />
+        <di:waypoint x="450" y="452" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="461" y="387" width="38" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
-        <di:waypoint x="630" y="177" />
-        <di:waypoint x="692" y="177" />
+        <di:waypoint x="790" y="320" />
+        <di:waypoint x="952" y="320" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
