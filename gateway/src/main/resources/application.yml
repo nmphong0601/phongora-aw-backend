@@ -78,6 +78,14 @@ spring:
             # Bắt buộc để giải quyết triệt để lỗi 302 Redirect bị mất cổng 8080
             - PreserveHostHeader
 
+        # Route dành cho REST API của Camunda
+        - id: camunda-engine-rest-route
+          uri: http://localhost:8087
+          predicates:
+            - Path=/engine-rest/**
+          filters:
+            - PreserveHostHeader
+
         # Route cho HR
         - id: hr-route
           uri: http://localhost:8088 # Địa chỉ thực của hr-services

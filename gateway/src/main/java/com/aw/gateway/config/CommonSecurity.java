@@ -27,6 +27,8 @@ public class CommonSecurity {
                         .pathMatchers(
                                 "/camunda",
                                 "/camunda-welcome",
+                                "/engine-rest",
+                                "/engine-rest/**",
                                 "/camunda/**"
                         ).permitAll()
 

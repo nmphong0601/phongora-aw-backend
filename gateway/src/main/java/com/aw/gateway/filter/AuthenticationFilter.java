@@ -39,7 +39,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
 
         // Nếu bắt đầu bằng /camunda -> Bỏ qua kiểm tra (trả về false vì nó KHÔNG PHẢI là secured)
-        if (path.startsWith("/camunda")) {
+        if (path.startsWith("/camunda") || path.startsWith("/engine-rest")) {
             return false;
         }
 
