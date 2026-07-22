@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtProvider {
@@ -25,13 +26,13 @@ public class JwtProvider {
     }
 
     // Hàm tạo Token, nhét thêm thông tin Roles vào bên trong Payload (Claims)
-    public String generateToken(String username, String roles) {
+    public String generateToken(String username, List<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .setSubject(username)                 // Subject thường lưu User ID hoặc Username
-                .claim("roles", roles)                // Đính kèm quyền hạn (vd: ROLE_MANAGER)
+                .claim("roles", roles)          // Đính kèm quyền hạn (vd: ROLE_MANAGER)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

@@ -27,9 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -85,9 +83,8 @@ public class AuthController {
 
         // 2. Lấy Roles thông qua Service
         Set<String> roleNames = authService.getRolesByUserName(user.getUsername());
-
-        String roleString = String.join(",", roleNames);
-        String token = jwtProvider.generateToken(user.getId().toString(), roleString);
+        List<String> roleNameList = new ArrayList<>(roleNames);
+        String token = jwtProvider.generateToken(user.getId().toString(), roleNameList);
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", token,

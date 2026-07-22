@@ -19,7 +19,7 @@
     </resultMap>
 
     <insert id="insertHeadcountPlan">
-        INSERT INTO hr_headcount_plans (
+        INSERT INTO headcount_plans (
             id, department_id, title_id, plan_year, target_count, current_count,
             status, workflow_instance_id, created_by, created_at, updated_at
         )
@@ -36,26 +36,26 @@
     </insert>
 
     <select id="findById" resultMap="HeadcountPlanResultMap">
-        SELECT * FROM hr_headcount_plans
+        SELECT * FROM headcount_plans
         WHERE id = #{id}
     </select>
 
     <select id="findByDepartmentAndYear" resultMap="HeadcountPlanResultMap">
-        SELECT * FROM hr_headcount_plans
+        SELECT * FROM headcount_plans
         WHERE department_id = #{departmentId}
           AND plan_year = #{planYear}
         ORDER BY created_at DESC
     </select>
 
     <update id="updateHeadcountPlan">
-        UPDATE hr_headcount_plans
+        UPDATE headcount_plans
         SET target_count = #{targetCount},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
 
     <update id="updateWorkflowStatus">
-        UPDATE hr_headcount_plans
+        UPDATE headcount_plans
         SET status = #{status},
             workflow_instance_id = #{workflowInstanceId},
             updated_at = CURRENT_TIMESTAMP
@@ -63,14 +63,14 @@
     </update>
 
     <update id="updateCurrentCount">
-        UPDATE hr_headcount_plans
+        UPDATE headcount_plans
         SET current_count = #{currentCount},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
 
     <delete id="deleteById">
-        DELETE FROM hr_headcount_plans
+        DELETE FROM headcount_plans
         WHERE id = #{id}
           AND status = 'DRAFT'
     </delete>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aw.hr.mapper.OrgUnitMapper">
+    <resultMap id="OrgUnitResultMap" type="com.aw.hr.entity.OrgUnitEntity">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="levelId" column="level_id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="orgUnitSearchFilters">
+        <where>
+            <if test="code != null and code != ''">
+                AND code = #{code}
+            </if>
+            <if test="name != null and name != ''">
+                AND name = #{name}
+            </if>
+            <if test="levelId != null and levelId != ''">
+                AND level_id = #{levelId}
+            </if>
+            <if test="parentId != null and parentId != ''">
+                AND parent_id = #{parentId}
+            </if>
+            <if test="managerId != null and managerId != ''">
+                AND manager_id = #{managerId}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND status IN
+                <foreach item="status" collection="statuses" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="OrgUnitResultMap">
+        SELECT * FROM org_units
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findAllByConditions"
+            resultMap="OrgUnitResultMap"
+            parameterType="com.aw.hr.dto.req.SearchOrgUnitRequest">
+        SELECT * FROM org_units
+        <include refid="orgUnitSearchFilters" />
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findPagedByConditions"
+            resultMap="OrgUnitResultMap"
+            parameterType="com.aw.hr.dto.req.SearchPagedOrgUnitRequest">
+        SELECT * FROM org_units
+        <include refid="orgUnitSearchFilters" />
+        ORDER BY created_at DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <!-- Total Rows Query -->
+    <select id="countOrgUnits" resultType="long">
+        SELECT COUNT(*)
+        FROM org_units
+        <include refid="orgUnitSearchFilters"/>
+    </select>
+
+    <select id="findById" resultMap="OrgUnitResultMap">
+        SELECT * FROM org_units
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="OrgUnitResultMap">
+        SELECT * FROM org_units
+        WHERE code = #{code}
+    </select>
+
+    <insert id="insertOrgUnit">
+        INSERT INTO org_units (
+            id,
+            code,
+            name,
+            level_id,
+            parent_id,
+            manager_id,
+            status,
+            created_at
+        )
+        VALUES (
+                #{id},
+                #{code},
+                #{name},
+                #{levelId},
+                #{parentId},
+                #{managerId},
+                #{status},
+                CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <update id="updateOrgUnitById">
+        UPDATE org_units
+        SET name = #{name},
+            level_id = #{levelId},
+            parent_id = #{parentId},
+            manager_id = #{managerId},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateOrgUnitByCode">
+        UPDATE org_units
+        SET name = #{name},
+            level_id = #{levelId},
+            parent_id = #{parentId},
+            manager_id = #{managerId},
+            status = #{status}
+        WHERE code = #{code}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM org_units
+        WHERE id = #{id}
+          AND status = 'DRAFT'
+    </delete>
+
+</mapper>

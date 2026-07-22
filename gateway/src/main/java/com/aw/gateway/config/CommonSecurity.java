@@ -22,18 +22,9 @@ public class CommonSecurity {
 
                 // 3. Cấu hình phân quyền các luồng request
                 .authorizeExchange(exchanges -> exchanges
-                        // Cho phép tất cả mọi người truy cập endpoint login/register công khai
-                        .pathMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
-                        .pathMatchers(
-                                "/camunda",
-                                "/camunda-welcome",
-                                "/engine-rest",
-                                "/engine-rest/**",
-                                "/camunda/**"
-                        ).permitAll()
-
-                        // Mọi request khác đều bắt buộc phải đi qua bộ lọc xác thực (Authenticated)
-                        .anyExchange().authenticated()
+                        // Cho phép tất cả request đi qua lớp Spring Security.
+                        // Việc validate Token JWT sẽ do AuthenticationFilter (Gateway Filter) của bạn xử lý.
+                        .anyExchange().permitAll()
                 );
 
         return http.build();
