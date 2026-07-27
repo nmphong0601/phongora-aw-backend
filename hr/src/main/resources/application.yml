@@ -12,6 +12,26 @@ spring:
     password: phongora1T@Dmin
     driver-class-name: org.postgresql.Driver
 
+  # Cấu hình Kafka
+  kafka:
+    # Connect via the external listener port
+    bootstrap-servers: 127.0.0.1:9094
+
+    # Cấu hình cho Service BẮN event (Producer) - Vd: proposal, workflow
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+    # Cấu hình cho Service NHẬN event (Consumer) - Vd: workflow, document
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # Bắt buộc để Spring Boot tự động map JSON string thành Java Object (DTO)
+        spring.json.trusted.packages: "com.aw.*"
+
   # Cấu hình Redis
   data:
     redis:

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aw.hr.mapper.JobTitleMapper">
+    <resultMap id="JobTitleResultMap" type="com.aw.hr.entity.JobTitleEntity">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="jobLevelId" column="job_level_id"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="jobTitleSearchFilters">
+        <where>
+            <if test="code != null and code != ''">
+                AND code = #{code}
+            </if>
+            <if test="name != null and name != ''">
+                AND name = #{name}
+            </if>
+            <if test="jobLevelId != null and jobLevelId != ''">
+                AND job_level_id = #{jobLevelId}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND status IN
+                <foreach item="status" collection="statuses" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="JobTitleResultMap">
+        SELECT * FROM job_titles
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findAllByConditions"
+            resultMap="JobTitleResultMap"
+            parameterType="com.aw.hr.dto.req.job.title.SearchJobTitleRequest">
+        SELECT * FROM job_titles
+        <include refid="jobTitleSearchFilters" />
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findPagedByConditions"
+            resultMap="JobTitleResultMap"
+            parameterType="com.aw.hr.dto.req.job.title.SearchPagedJobTitleRequest">
+        SELECT * FROM job_titles
+        <include refid="jobTitleSearchFilters" />
+        ORDER BY created_at DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <!-- Total Rows Query -->
+    <select id="countJobTitles" resultType="long">
+        SELECT COUNT(*)
+        FROM job_titles
+        <include refid="jobTitleSearchFilters"/>
+    </select>
+
+    <select id="findById" resultMap="JobTitleResultMap">
+        SELECT * FROM job_titles
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="JobTitleResultMap">
+        SELECT * FROM job_titles
+        WHERE code = #{code}
+    </select>
+
+    <insert id="insertJobTitle">
+        INSERT INTO job_titles (
+            id,
+            code,
+            name,
+            job_level_id,
+            status,
+            created_at
+        )
+        VALUES (
+                #{id},
+                #{code},
+                #{name},
+                #{jobLevelId},
+                #{status},
+                CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <update id="updateJobTitleById">
+        UPDATE job_titles
+        SET name = #{name},
+            job_level_id = #{jobLevelId},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateJobTitleByCode">
+        UPDATE job_titles
+        SET name = #{name},
+            job_level_id = #{jobLevelId},
+            status = #{status}
+        WHERE code = #{code}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM job_titles
+        WHERE id = #{id}
+          AND status = 'DRAFT'
+    </delete>
+
+</mapper>

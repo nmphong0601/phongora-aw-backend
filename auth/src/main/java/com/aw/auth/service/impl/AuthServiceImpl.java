@@ -9,14 +9,21 @@ import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.mapper.UserMapper;
 import com.aw.auth.service.AuthService;
+import com.aw.common.response.ApiResponse;
 import com.aw.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 
@@ -100,6 +107,8 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
+                .userId(user.getId().toString())
+                .roles(user.getRoles())
                 .build();
     }
 
@@ -139,17 +148,26 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private HrEmployeeResponse getEmployeeInfo(User user) {
+        // 1. Fetch a system token from your Login Server
+        String systemToken = jwtService.generateSystemToken();
+
+        // 2. Pass the token to the HR service
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(systemToken); // Produces "Bearer <token>"
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
         String endpoint = String.format("%s/api/v1/employees/%s", hrServiceUrl, user.getEmployeeId());
-        ResponseEntity<HrEmployeeResponse> response = restTemplate.getForEntity(
+        ResponseEntity<ApiResponse<HrEmployeeResponse>> response = restTemplate.exchange(
                 endpoint,
-                HrEmployeeResponse.class
+                HttpMethod.GET,
+                requestEntity,
+                new ParameterizedTypeReference<>() {}
         );
 
-        HrEmployeeResponse hrEmployeeData = new HrEmployeeResponse();
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            hrEmployeeData = response.getBody();
-        }
+        // 3. Extract your data payload safely
+        ApiResponse<HrEmployeeResponse> apiResponse = response.getBody();
 
-        return hrEmployeeData;
+        return (apiResponse != null) ? apiResponse.getData() : null;
     }
 }

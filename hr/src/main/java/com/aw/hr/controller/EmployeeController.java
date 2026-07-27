@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/employees")
 @RequiredArgsConstructor
@@ -22,9 +24,15 @@ public class EmployeeController {
         return ApiResponse.success(response);
     }
 
-    @GetMapping("/{code}")
-    public ApiResponse<EmployeeResponse> getEmployeeById(@PathVariable String code) {
-        EmployeeResponse response = employeeService.findByCode(code);
+    @GetMapping("/{id}")
+    public ApiResponse<EmployeeResponse> getEmployeeById(@PathVariable UUID id) {
+        EmployeeResponse response = employeeService.findById(id);
         return ApiResponse.success(response);
     }
+
+//    @GetMapping("/{code}")
+//    public ApiResponse<EmployeeResponse> getEmployeeByCode(@PathVariable String code) {
+//        EmployeeResponse response = employeeService.findByCode(code);
+//        return ApiResponse.success(response);
+//    }
 }

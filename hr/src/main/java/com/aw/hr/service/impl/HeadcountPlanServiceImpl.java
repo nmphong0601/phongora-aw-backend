@@ -48,7 +48,7 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
         entity.setTargetCount(request.getTargetCount());
         entity.setCurrentCount(request.getCurrentCount());
         entity.setStatus(request.getStatus());
-        entity.setCreatedBy(request.getCreatedBy());
+        entity.setCreatedBy(SecurityUtils.getCurrentUserId());
 
         // Lưu vào database
         headcountPlanMapper.insertHeadcountPlan(entity);

@@ -26,6 +26,12 @@
                );
     </insert>
 
+    <select id="findById" resultMap="EmployeeResultMap">
+        SELECT id, employee_code, full_name, org_unit_code, title_code, employment_status, created_at
+        FROM employees
+        WHERE id = #{id}
+    </select>
+
     <select id="findByCode" resultMap="EmployeeResultMap">
         SELECT id, employee_code, full_name, org_unit_code, title_code, employment_status, created_at
         FROM employees

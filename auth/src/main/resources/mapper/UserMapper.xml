@@ -9,6 +9,7 @@
         <result property="email" column="email"/>
         <result property="password" column="password"/>
         <result property="isActive" column="is_active"/>
+        <result property="employeeId" column="employee_id"/>
         <collection property="roles" ofType="string" javaType="java.util.HashSet">
             <result column="role_name"/>
         </collection>

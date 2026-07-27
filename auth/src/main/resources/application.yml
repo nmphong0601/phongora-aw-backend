@@ -27,6 +27,7 @@ jwt:
 # Cấu hình MyBatis
 mybatis:
   mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.aw.auth.entity
   type-handlers-package: com.aw.common.config.type
   configuration:
     # Tự động chuyển đổi tên cột (ví dụ: is_active -> isActive, full_name -> fullName)

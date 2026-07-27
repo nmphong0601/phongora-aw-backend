@@ -77,7 +77,13 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
+    public EmployeeResponse findById(UUID id) {
+        return employeeMapper.findById(id);
+    }
+
+    @Override
+    @Transactional
     public EmployeeResponse findByCode(String code) {
-        return employeeMapper.getByCode(code);
+        return employeeMapper.findByCode(code);
     }
 }

@@ -94,6 +94,16 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateSystemToken() {
+        return Jwts.builder()
+                .setClaims(Map.of("roles", Set.of("ROLE_SYSTEM")))
+                .setSubject("system")
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 60000)) // Short 1-minute expiration
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 
     // ==================== 3. CÁC HÀM KIỂM TRA (VALIDATION) ====================
 

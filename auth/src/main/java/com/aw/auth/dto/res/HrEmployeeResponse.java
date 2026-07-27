@@ -1,6 +1,8 @@
 package com.aw.auth.dto.res;
 
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 // DTO nhận về (Response)
@@ -11,5 +13,6 @@ public class HrEmployeeResponse {
     private String fullName;
     private String orgUnitCode;
     private String titleCode;
-    private String employeeStatus;
+    private String employmentStatus;
+    private LocalDateTime createdAt;
 }

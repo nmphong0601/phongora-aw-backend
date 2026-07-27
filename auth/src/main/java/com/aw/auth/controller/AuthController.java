@@ -62,36 +62,8 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "400", description = "Sai tài khoản hoặc mật khẩu", content = @Content)
     })
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        String username = request.getUsername();
-        String password = request.getPassword();
-
-        // 1. Tìm user thông qua Service
-        User user = authService.findByUsername(username);
-
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Tài khoản không tồn tại!");
-        }
-
-        if (!user.getIsActive()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Tài khoản đã bị khóa!");
-        }
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sai mật khẩu!");
-        }
-
-        // 2. Lấy Roles thông qua Service
-        Set<String> roleNames = authService.getRolesByUserName(user.getUsername());
-        List<String> roleNameList = new ArrayList<>(roleNames);
-        String token = jwtProvider.generateToken(user.getId().toString(), roleNameList);
-
-        return ResponseEntity.ok(Map.of(
-                "accessToken", token,
-                "tokenType", "Bearer",
-                "userId", user.getId().toString(),
-                "roles", roleNames
-        ));
+    public AuthResponse login(@RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 
     @PostMapping("/refresh")
