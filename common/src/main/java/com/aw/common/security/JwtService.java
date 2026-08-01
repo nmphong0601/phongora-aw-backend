@@ -38,11 +38,19 @@ public class JwtService {
     }
 
     /**
-     * Rút trích EmployeeId dạng UUID từ Token
+     * Rút trích EmployeeCode từ Token
      */
-    public UUID getEmployeeIdFromToken(String token) {
-        String employeeIdStr = extractClaim(token, claims -> claims.get("employeeId", String.class));
-        return employeeIdStr != null ? UUID.fromString(employeeIdStr) : null;
+    public String getEmployeeCodeFromToken(String token) {
+        String employeeCode = extractClaim(token, claims -> claims.get("employeeCode", String.class));
+        return employeeCode != null && !employeeCode.isEmpty() ? employeeCode : null;
+    }
+
+    /**
+     * Rút trích Organization Unit từ Token
+     */
+    public String getOrgUnitCodeFromToken(String token) {
+        String orgUnitCode = extractClaim(token, claims -> claims.get("orgUnitCode", String.class));
+        return orgUnitCode != null && !orgUnitCode.isEmpty() ? orgUnitCode : null;
     }
 
     /**
@@ -72,12 +80,12 @@ public class JwtService {
     /**
      * Hàm sinh Access Token
      */
-    public String generateAccessToken(String username, UUID userId, UUID employeeId, String departmentCode, Set<String> roles) {
+    public String generateAccessToken(String username, UUID userId, String employeeCode, String departmentCode, Set<String> roles) {
         Map<String, Object> claims = new HashMap<>();
 
         // Chuyển UUID thành String để tránh lỗi rườm rà khi Jackson serialize JSON
         claims.put("userId", userId != null ? userId.toString() : null);
-        claims.put("employeeId", employeeId != null ? employeeId.toString() : null);
+        claims.put("employeeCode", employeeCode != null && !employeeCode.isEmpty() ? employeeCode : null);
         claims.put("orgUnitCode", departmentCode != null && !departmentCode.isEmpty() ? departmentCode : null);
         claims.put("roles", roles);
 

@@ -46,14 +46,6 @@ public class SecurityUtils {
     }
 
     /**
-     * Lấy UUID của Employee (Bảng employees bên HR)
-     * Trả về null nếu user này (ví dụ: Admin hệ thống) không có hồ sơ nhân sự
-     */
-    public static UUID getCurrentEmployeeId() {
-        return getCurrentUser().getEmployeeId();
-    }
-
-    /**
      * Lấy Employee Code (Mã nhân viên)
      */
     public static String getCurrentEmployeeCode() {

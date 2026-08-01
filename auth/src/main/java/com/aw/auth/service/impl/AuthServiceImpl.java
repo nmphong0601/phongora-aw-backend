@@ -94,11 +94,13 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid username or password");
         }
 
-        HrEmployeeResponse employeeInfo = getEmployeeInfo(user);
+        HrEmployeeResponse employeeInfo = Optional
+                .ofNullable(getEmployeeInfo(user))
+                .orElse(new HrEmployeeResponse());
         String accessToken = jwtService.generateAccessToken(
                 user.getUsername(),
                 user.getId(),
-                user.getEmployeeId(),
+                employeeInfo.getEmployeeCode(),
                 employeeInfo.getOrgUnitCode(),
                 user.getRoles());
         String refreshToken = jwtService.generateToken(user.getUsername(), new HashMap<>(), refreshExpiration);
@@ -117,13 +119,15 @@ public class AuthServiceImpl implements AuthService {
         String username = jwtService.getUsernameFromToken(request.getRefreshToken());
         User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid token session"));
-        HrEmployeeResponse employeeInfo = getEmployeeInfo(user);
+        HrEmployeeResponse employeeInfo = Optional
+                .ofNullable(getEmployeeInfo(user))
+                .orElse(new HrEmployeeResponse());
 
         if (jwtService.validateToken(request.getRefreshToken())) {
             String newAccessToken = jwtService.generateAccessToken(
                     user.getUsername(),
                     user.getId(),
-                    user.getEmployeeId(),
+                    employeeInfo.getEmployeeCode(),
                     employeeInfo.getOrgUnitCode(),
                     user.getRoles());
             return AuthResponse.builder()

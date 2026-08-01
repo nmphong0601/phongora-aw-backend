@@ -75,4 +75,10 @@
           AND status = 'DRAFT'
     </delete>
 
+    <update id="updateWorkflowInstanceId">
+        UPDATE headcount_plans
+        SET workflow_instance_id = #{workflowInstanceId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
 </mapper>

@@ -1,6 +1,7 @@
 package com.aw.workflow.service.impl;
 
 import com.aw.common.event.WorkflowStartEvent;
+import com.aw.common.event.WorkflowStartedEvent;
 import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
@@ -10,6 +11,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -24,28 +26,46 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final RuntimeService runtimeService;
     private final TaskService taskService;
 
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private static final String TOPIC_WORKFLOW_STARTED = "workflow-started-events";
+
     @Override
     public void startWorkflow(WorkflowStartEvent event) {
-        log.info("[Camunda] Khởi động Instance mới cho quy trình {} cho ID: {}",
-                event.getProcessDefinitionKey(),
-                event.getBusinessKey()
-        );
+        try {
+            log.info("[Camunda] Khởi động Instance mới cho quy trình {} cho ID: {}",
+                    event.getProcessDefinitionKey(),
+                    event.getBusinessKey()
+            );
 
-        // 1. Retrieve the variables injected by the producer
-        Map<String, Object> variables = event.getVariables();
+            // 1. Retrieve the variables injected by the producer
+            Map<String, Object> variables = event.getVariables();
 
-        // 2. Automatically inject standard system variables (so you don't have to pass them manually every time)
-        variables.put("initiatorId", event.getRequesterId());
-        variables.put("initiatorName", event.getRequesterName());
+            // 2. Automatically inject standard system variables (so you don't have to pass them manually every time)
+            variables.put("initiatorId", event.getRequesterId());
+            variables.put("initiatorName", event.getRequesterName());
 
-        // 3. Start the process dynamically based on the definition key
-        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
-                event.getProcessDefinitionKey(),
-                event.getBusinessKey(),
-                variables
-        );
+            // 3. Start the process dynamically based on the definition key
+            ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
+                    event.getProcessDefinitionKey(),
+                    event.getBusinessKey(),
+                    variables
+            );
 
-        log.info("[Camunda] Khởi tạo thành công Instance ID: {}, Trạng thái: Hoạt động", processInstance.getId());
+            log.info("[Camunda] Khởi tạo thành công Instance ID: {}, Trạng thái: Hoạt động", processInstance.getId());
+
+            // 4. Bắn sự kiện báo cho HR Service biết Workflow đã được tạo thành công
+            WorkflowStartedEvent startedEvent = WorkflowStartedEvent.builder()
+                    .processDefinitionKey(event.getProcessDefinitionKey())
+                    .businessKey(event.getBusinessKey())
+                    .processInstanceId(processInstance.getId())
+                    .build();
+
+            kafkaTemplate.send(TOPIC_WORKFLOW_STARTED, event.getBusinessKey(), startedEvent);
+            log.info("[Kafka] Đã gửi WorkflowStartedEvent cho businessKey: {}", event.getBusinessKey());
+        } catch (Exception ex) {
+            log.info("[startWorkflow] Đã có lỗi xảy ra : {}", ex.getMessage());
+            throw ex;
+        }
     }
 
     @Override

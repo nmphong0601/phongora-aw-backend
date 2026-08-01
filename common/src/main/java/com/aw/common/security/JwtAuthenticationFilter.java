@@ -59,7 +59,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 3. Rút trích thông tin từ Claims của Token
                 UUID userId = jwtService.getUserIdFromToken(jwt);
                 String username = jwtService.getUsernameFromToken(jwt);
-                UUID employeeId = jwtService.getEmployeeIdFromToken(jwt);
+                String employeeCode = jwtService.getEmployeeCodeFromToken(jwt);
+                String orgUnitCode = jwtService.getOrgUnitCodeFromToken(jwt);
                 List<String> roles = jwtService.getRolesFromToken(jwt); // VD: ["ROLE_CEO", "ROLE_USER"]
 
                 // 4. Chuyển đổi roles thành định dạng mà Spring Security hiểu
@@ -71,7 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserPrincipal principal = UserPrincipal.builder()
                         .userId(userId)
                         .username(username)
-                        .employeeId(employeeId)
+                        .employeeCode(employeeCode)
+                        .orgUnitCode(orgUnitCode)
                         .authorities(authorities)
                         .build();
 

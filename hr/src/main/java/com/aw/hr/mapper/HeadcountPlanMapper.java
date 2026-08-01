@@ -40,4 +40,7 @@ public interface HeadcountPlanMapper {
 
     // Xóa định biên (Thường chỉ cho phép xóa nếu đang là DRAFT)
     void deleteById(@Param("id") UUID id);
+
+    // Thêm method update workflow_instance_id
+    void updateWorkflowInstanceId(@Param("id") UUID id, @Param("workflowInstanceId") UUID workflowInstanceId);
 }

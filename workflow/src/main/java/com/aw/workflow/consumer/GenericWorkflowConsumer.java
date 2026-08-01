@@ -16,7 +16,7 @@ public class GenericWorkflowConsumer {
 
     @KafkaListener(
             topics = "workflow-start-events",
-            groupId = "workflow-engine-group"
+            groupId = "workflow-group"
     )
     public void consumeWorkflowStartEvent(WorkflowStartEvent event) {
         log.info("Received request to start process: {} for Business Key: {}",

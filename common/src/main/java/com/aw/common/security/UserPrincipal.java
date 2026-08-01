@@ -19,9 +19,6 @@ public class UserPrincipal implements UserDetails {
     private UUID userId;
     private String username;
 
-    // Khóa ngoại logic liên kết với bảng employees bên module HR
-    private UUID employeeId;
-
     private String employeeCode;
 
     private String orgUnitCode;

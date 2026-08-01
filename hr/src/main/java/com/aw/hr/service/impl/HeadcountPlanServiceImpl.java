@@ -31,7 +31,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class HeadcountPlanServiceImpl implements HeadcountPlanService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private static final String TOPIC_WORKFLOW_START = "workflow-start-commands";
+    private static final String TOPIC_WORKFLOW_START = "workflow-start-events";
+    private static final String PROCESS_DEFINITION_KEY = "headcount-plan-approval";
 
     private final HeadcountPlanMapper headcountPlanMapper;
 
@@ -69,7 +70,7 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
         processVars.put("action", "CREATE");
 
         WorkflowStartEvent event = WorkflowStartEvent.builder()
-                .processDefinitionKey("headcount_plan_proposal") // Tell Camunda which flow to run
+                .processDefinitionKey(PROCESS_DEFINITION_KEY) // Tell Camunda which flow to run
                 .businessKey(entity.getId().toString())
                 .requesterId(SecurityUtils.getCurrentUserId().toString())
                 .requesterName(SecurityUtils.getCurrentUsername())
@@ -79,6 +80,13 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
         kafkaTemplate.send(TOPIC_WORKFLOW_START, event.getBusinessKey(), event);
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public void updateWorkflowInstanceId(UUID planId, String workflowInstanceId) {
+        headcountPlanMapper.updateWorkflowInstanceId(planId, UUID.fromString(workflowInstanceId));
+        log.info("Đã cập nhật workflow_instance_id: {} cho Headcount Plan: {}", workflowInstanceId, planId);
     }
 
     @Override
