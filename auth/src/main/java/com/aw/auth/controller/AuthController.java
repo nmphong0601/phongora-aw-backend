@@ -1,11 +1,11 @@
 package com.aw.auth.controller;
 
+import com.aw.common.response.ApiResponse;
 import com.aw.auth.dto.req.LoginRequest;
 import com.aw.auth.dto.req.RefreshTokenRequest;
 import com.aw.auth.dto.req.RegisterRequest;
 import com.aw.auth.dto.res.AuthResponse;
 import com.aw.auth.dto.res.UserProfileResponse;
-import com.aw.auth.entity.User;
 import com.aw.auth.service.AuthService;
 import com.aw.auth.util.JwtProvider;
 import com.aw.common.security.JwtService;
@@ -13,7 +13,6 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,20 +46,27 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Đăng ký tài khoản mới", description = "Tạo mới một User với quyền mặc định là ROLE_USER. Kiểm tra trùng lặp Username và Email.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Đăng ký thành công"),
-            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ hoặc tài khoản/email đã tồn tại", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng ký thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ hoặc tài khoản/email đã tồn tại", content = @Content)
     })
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ApiResponse<String> register(@RequestBody RegisterRequest request) {
         authService.register(request);
-        return ResponseEntity.ok("User registered successfully");
+        return ApiResponse.success("User registered successfully");
     }
 
     @PostMapping("/login")
     @Operation(summary = "Đăng nhập hệ thống", description = "Xác thực tài khoản và mật khẩu. Trả về cặp Access Token và Refresh Token nếu thành công.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Xác thực thành công",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Sai tài khoản hoặc mật khẩu", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Xác thực thành công",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Sai tài khoản hoặc mật khẩu",
+                    content = @Content
+            )
     })
     public AuthResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
@@ -69,12 +75,19 @@ public class AuthController {
     @PostMapping("/refresh")
     @Operation(summary = "Làm mới Access Token", description = "Sử dụng một Refresh Token còn hạn để đổi lấy một Access Token mới mà không cần bắt người dùng đăng nhập lại.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Gia hạn Token thành công",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Refresh Token đã hết hạn hoặc không hợp lệ", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Gia hạn Token thành công",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Refresh Token đã hết hạn hoặc không hợp lệ",
+                    content = @Content
+            )
     })
-    public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refreshToken(request));
+    public ApiResponse<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        return ApiResponse.success(authService.refreshToken(request));
     }
 
     @PostMapping("/logout")
@@ -84,13 +97,19 @@ public class AuthController {
             security = @SecurityRequirement(name = "BearerAuth") // Yêu cầu gửi kèm Bearer Token trên Swagger UI
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Đăng xuất thành công"),
-            @ApiResponse(responseCode = "401", description = "Token không hợp lệ hoặc đã hết hạn", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Đăng xuất thành công"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Token không hợp lệ hoặc đã hết hạn", content = @Content
+            )
     })
-    public ResponseEntity<String> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+    public ApiResponse<String> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         /// 1. Kiểm tra header hợp lệ
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.badRequest().body("Invalid authorization header");
+            return ApiResponse.error(400, "Invalid authorization header");
         }
 
         String token = authHeader.substring(7);
@@ -111,13 +130,13 @@ public class AuthController {
             }
 
             // Note: Client vẫn phải tự xóa token ở LocalStorage/Cookies
-            return ResponseEntity.ok("Logged out successfully");
+            return ApiResponse.success("Logged out successfully");
 
         } catch (ExpiredJwtException e) {
             // Nếu token đã hết hạn sẵn thì không cần chặn nữa, vẫn báo logout thành công
-            return ResponseEntity.ok("Logged out successfully");
+            return ApiResponse.success("Logged out successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
+            return ApiResponse.error(500, "Logout failed");
         }
     }
 
@@ -128,12 +147,19 @@ public class AuthController {
             security = @SecurityRequirement(name = "BearerAuth") // Yêu cầu gửi kèm Bearer Token trên Swagger UI
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lấy dữ liệu thành công",
-                    content = @Content(schema = @Schema(implementation = UserProfileResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Chưa xác thực / Token không hợp lệ", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Lấy dữ liệu thành công",
+                    content = @Content(schema = @Schema(implementation = UserProfileResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Chưa xác thực / Token không hợp lệ",
+                    content = @Content
+            )
     })
-    public ResponseEntity<UserProfileResponse> getCurrentUser(Principal principal) {
+    public ApiResponse<UserProfileResponse> getCurrentUser(Principal principal) {
         // Principal is injected by Spring Security if the access token check is successful
-        return ResponseEntity.ok(authService.getUserProfile(principal.getName()));
+        return ApiResponse.success(authService.getUserProfile(principal.getName()));
     }
 }

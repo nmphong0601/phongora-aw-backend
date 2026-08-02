@@ -1,18 +1,20 @@
-package com.aw.workflow.model;
+package com.aw.hr.dto.res;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
+
 import java.util.Map;
 
 @Data
-public class WorkflowInstance {
-    private Integer id;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class WorkflowStatusResponse {
     private String proposalId;
     private String status;
     private String currentStep;
     private String assignee;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
     private Map<String, Object> variables;
 }

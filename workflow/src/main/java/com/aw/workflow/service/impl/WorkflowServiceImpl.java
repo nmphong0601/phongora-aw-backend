@@ -7,14 +7,18 @@ import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.history.HistoricProcessInstance;
+import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -25,6 +29,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     // Inject Camunda Core Services
     private final RuntimeService runtimeService;
     private final TaskService taskService;
+
+    private final HistoryService historyService;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private static final String TOPIC_WORKFLOW_STARTED = "workflow-started-events";
@@ -82,6 +88,14 @@ public class WorkflowServiceImpl implements WorkflowService {
             statusDto.setStatus("PENDING");
             statusDto.setCurrentStep(currentTask.getName()); // ví dụ: "Manager xem xét"
             statusDto.setAssignee(currentTask.getAssignee()); // ví dụ: "Direct Manager"
+
+            // Lấy TẤT CẢ các biến (Bao gồm Process Variables + Local/Input Variables của Task)
+            Map<String, Object> allVariables = taskService.getVariables(currentTask.getId());
+
+            // Nếu bạn CHỈ muốn lấy các biến Local/Input của riêng Task này
+            // Map<String, Object> localVariables = taskService.getVariablesLocal(currentTask.getId());
+
+            statusDto.setVariables(allVariables);
         } else {
             // Nếu không còn Task nào hoạt động nghĩa là quy trình đã hoàn thành hoặc bị từ chối
             // Chúng ta có thể query bảng lịch sử ACT_HI_PROCINST của Camunda để lấy trạng thái cuối cùng
@@ -90,10 +104,29 @@ public class WorkflowServiceImpl implements WorkflowService {
                     .active()
                     .count() == 0;
 
+            HistoricProcessInstance historicProcessInstance = historyService
+                    .createHistoricProcessInstanceQuery()
+                    .processInstanceBusinessKey(proposalId)
+                    .singleResult();
+
             if (isCompleted) {
                 statusDto.setStatus("COMPLETED");
                 statusDto.setCurrentStep("DONE");
                 statusDto.setAssignee(null);
+
+                // Khi quy trình xong, dữ liệu trong RuntimeService sẽ bị xoá, phải lấy từ HistoryService
+                List<HistoricVariableInstance> historicVars = historyService
+                        .createHistoricVariableInstanceQuery()
+                        .processInstanceId(historicProcessInstance.getId())
+                        .list();
+
+                Map<String, Object> historyVariables = new HashMap<>();
+                for (HistoricVariableInstance var : historicVars) {
+                    historyVariables.put(var.getName(), var.getValue());
+                }
+                statusDto.setVariables(historyVariables);
+            } else {
+                statusDto.setStatus("NOT_FOUND");
             }
         }
         return statusDto;

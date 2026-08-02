@@ -61,3 +61,7 @@ logging:
 springdoc:
   api-docs:
     path: /api-docs
+
+service:
+  workflow:
+    url: http://localhost:8087

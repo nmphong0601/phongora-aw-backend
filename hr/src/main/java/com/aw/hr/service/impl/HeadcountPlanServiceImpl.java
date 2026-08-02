@@ -1,40 +1,44 @@
 package com.aw.hr.service.impl;
 
-import com.aw.common.event.ProposalEvent;
 import com.aw.common.event.WorkflowStartEvent;
+import com.aw.common.response.ApiResponse;
 import com.aw.common.security.SecurityUtils;
+import com.aw.common.util.ObjectMapperUtils;
 import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
-import com.aw.hr.dto.req.CreateSeedEmployeeRequest;
 import com.aw.hr.dto.req.PerformWorkflowRequest;
 import com.aw.hr.dto.res.CreateHeadcountPlanResponse;
-import com.aw.hr.dto.res.CreateSeedEmployeeResponse;
 import com.aw.hr.dto.res.PerformWorkflowResponse;
-import com.aw.hr.entity.EmployeeEntity;
+import com.aw.hr.dto.res.WorkflowStatusResponse;
+import com.aw.hr.dto.res.headcount.plan.HeadcountPlanDetailResponse;
 import com.aw.hr.entity.HeadcountPlanEntity;
-import com.aw.hr.mapper.EmployeeMapper;
 import com.aw.hr.mapper.HeadcountPlanMapper;
-import com.aw.hr.mapper.SequenceMapper;
-import com.aw.hr.service.EmployeeService;
 import com.aw.hr.service.HeadcountPlanService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class HeadcountPlanServiceImpl implements HeadcountPlanService {
+    private final RestTemplate restTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private static final String TOPIC_WORKFLOW_START = "workflow-start-events";
     private static final String PROCESS_DEFINITION_KEY = "headcount-plan-approval";
 
     private final HeadcountPlanMapper headcountPlanMapper;
+
+    @Value("${service.workflow.url:http://localhost:8087}")
+    private String workflowServiceUrl;
 
     @Override
     @Transactional
@@ -78,6 +82,47 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
                 .build();
 
         kafkaTemplate.send(TOPIC_WORKFLOW_START, event.getBusinessKey(), event);
+
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HeadcountPlanEntity> findAll() {
+        return headcountPlanMapper.findAll();
+    }
+
+    @Override
+    @Transactional
+    public HeadcountPlanDetailResponse getHeadcountPlanDetail(UUID id) {
+        HeadcountPlanEntity entity = headcountPlanMapper.findById(id);
+
+        // Generic Mapping bằng 1 dòng duy nhất
+        HeadcountPlanDetailResponse response = ObjectMapperUtils.map(entity, HeadcountPlanDetailResponse.class);
+
+        // Gọi Workflow lấy dữ liệu động ghép vào
+        try {
+            String endpoint = String.format("%s/api/v1/workflow/status/%s", workflowServiceUrl, id.toString());
+            ResponseEntity<ApiResponse<WorkflowStatusResponse>> responseEntity = restTemplate.exchange(
+                    endpoint,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            ApiResponse<WorkflowStatusResponse> apiResponse = responseEntity.getBody();
+
+            if (apiResponse != null && apiResponse.getData() != null) {
+                WorkflowStatusResponse wfStatus = apiResponse.getData();
+                response.setWorkflowStatus(wfStatus.getStatus());
+                response.setCurrentTaskName(wfStatus.getCurrentStep());
+                response.setAssignee(wfStatus.getAssignee());
+                response.setWorkflowVariables(wfStatus.getVariables());
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi gọi Workflow Service cho plan {}: {}", id, e.getMessage());
+            response.setWorkflowStatus("UNKNOWN");
+        }
 
         return response;
     }

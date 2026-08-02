@@ -18,6 +18,42 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <sql id="headcountPlanSearchFilters">
+        <where>
+            <if test="departmentId != null and departmentId != ''">
+                AND department_id = #{department_id}
+            </if>
+            <if test="planYear != null and planYear != 0">
+                AND plan_year = #{planYear}
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM headcount_plans
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findAllByConditions"
+            resultMap="HeadcountPlanResultMap"
+            parameterType="com.aw.hr.dto.req.headcount.plan.SearchHeadcountPlanRequest">
+        SELECT * FROM headcount_plans
+        <include refid="headcountPlanSearchFilters" />
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findById" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM headcount_plans
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByDepartmentAndYear" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM headcount_plans
+        WHERE department_id = #{departmentId}
+          AND plan_year = #{planYear}
+        ORDER BY created_at DESC
+    </select>
+
     <insert id="insertHeadcountPlan">
         INSERT INTO headcount_plans (
             id, department_id, title_id, plan_year, target_count, current_count,
@@ -34,18 +70,6 @@
                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                )
     </insert>
-
-    <select id="findById" resultMap="HeadcountPlanResultMap">
-        SELECT * FROM headcount_plans
-        WHERE id = #{id}
-    </select>
-
-    <select id="findByDepartmentAndYear" resultMap="HeadcountPlanResultMap">
-        SELECT * FROM headcount_plans
-        WHERE department_id = #{departmentId}
-          AND plan_year = #{planYear}
-        ORDER BY created_at DESC
-    </select>
 
     <update id="updateHeadcountPlan">
         UPDATE headcount_plans

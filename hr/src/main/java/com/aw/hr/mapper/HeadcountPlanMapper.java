@@ -1,5 +1,6 @@
 package com.aw.hr.mapper;
 
+import com.aw.hr.dto.req.headcount.plan.SearchHeadcountPlanRequest;
 import com.aw.hr.entity.HeadcountPlanEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -10,11 +11,15 @@ import java.util.UUID;
 @Mapper
 public interface HeadcountPlanMapper {
 
-    // Khởi tạo bản nháp Kế hoạch định biên
-    void insertHeadcountPlan(HeadcountPlanEntity plan);
+    List<HeadcountPlanEntity> findAll();
+
+    List<HeadcountPlanEntity> findAllByConditions(SearchHeadcountPlanRequest searchDto);
 
     // Truy vấn chi tiết theo ID
     HeadcountPlanEntity findById(@Param("id") UUID id);
+
+    // Khởi tạo bản nháp Kế hoạch định biên
+    void insertHeadcountPlan(HeadcountPlanEntity plan);
 
     // Cập nhật thông tin (Chỉ áp dụng khi ở trạng thái DRAFT hoặc RETURNED)
     void updateHeadcountPlan(HeadcountPlanEntity plan);
