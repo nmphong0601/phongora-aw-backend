@@ -1,10 +1,12 @@
 package com.aw.workflow.service.impl;
 
+import com.aw.common.dto.res.Action;
 import com.aw.common.event.WorkflowStartEvent;
 import com.aw.common.event.WorkflowStartedEvent;
 import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.HistoryService;
@@ -13,13 +15,16 @@ import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.IdentityLink;
+import org.camunda.bpm.engine.task.IdentityLinkType;
 import org.camunda.bpm.engine.task.Task;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.camunda.bpm.admin.impl.plugin.resources.MetricsRestService.objectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -81,13 +86,13 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .processInstanceBusinessKey(proposalId)
                 .singleResult();
 
-        WorkflowInstance statusDto = new WorkflowInstance();
-        statusDto.setProposalId(proposalId);
+        WorkflowInstance instanceDto = new WorkflowInstance();
+        instanceDto.setProposalId(proposalId);
 
         if (currentTask != null) {
-            statusDto.setStatus("PENDING");
-            statusDto.setCurrentStep(currentTask.getName()); // ví dụ: "Manager xem xét"
-            statusDto.setAssignee(currentTask.getAssignee()); // ví dụ: "Direct Manager"
+            instanceDto.setStatus("PENDING");
+            instanceDto.setCurrentStep(currentTask.getName()); // ví dụ: "Manager xem xét"
+            instanceDto.setAssignee(currentTask.getAssignee()); // ví dụ: "Direct Manager"
 
             // Lấy TẤT CẢ các biến (Bao gồm Process Variables + Local/Input Variables của Task)
             Map<String, Object> allVariables = taskService.getVariables(currentTask.getId());
@@ -95,24 +100,47 @@ public class WorkflowServiceImpl implements WorkflowService {
             // Nếu bạn CHỈ muốn lấy các biến Local/Input của riêng Task này
             // Map<String, Object> localVariables = taskService.getVariablesLocal(currentTask.getId());
 
-            statusDto.setVariables(allVariables);
-        } else {
-            // Nếu không còn Task nào hoạt động nghĩa là quy trình đã hoàn thành hoặc bị từ chối
-            // Chúng ta có thể query bảng lịch sử ACT_HI_PROCINST của Camunda để lấy trạng thái cuối cùng
-            boolean isCompleted = runtimeService.createProcessInstanceQuery()
-                    .processInstanceBusinessKey(proposalId)
-                    .active()
-                    .count() == 0;
+            instanceDto.setVariables(allVariables);
 
+            // Lấy danh sách actions của Task hiện tại
+            List<Action> actions = getTaskActions(currentTask.getId());
+            instanceDto.setActions(actions);
+
+            // Lấy Candidate Users và Candidate Groups từ Camunda IdentityLink
+            List<IdentityLink> identityLinks = taskService.getIdentityLinksForTask(currentTask.getId());
+
+            Set<String> candidateGroups = identityLinks.stream()
+                    .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getGroupId() != null)
+                    .map(IdentityLink::getGroupId)
+                    .collect(Collectors.toSet());
+            instanceDto.setCandidateGroups(candidateGroups);
+
+            Set<String> candidateUsers = identityLinks.stream()
+                    .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getUserId() != null)
+                    .map(IdentityLink::getUserId)
+                    .collect(Collectors.toSet());
+            instanceDto.setCandidateUsers(candidateUsers);
+        } else {
             HistoricProcessInstance historicProcessInstance = historyService
                     .createHistoricProcessInstanceQuery()
                     .processInstanceBusinessKey(proposalId)
-                    .singleResult();
+                    .orderByProcessInstanceStartTime()
+                    .desc()
+                    .list()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
 
-            if (isCompleted) {
-                statusDto.setStatus("COMPLETED");
-                statusDto.setCurrentStep("DONE");
-                statusDto.setAssignee(null);
+            if (historicProcessInstance == null) {
+                instanceDto.setStatus("NOT_FOUND");
+                instanceDto.setActions(Collections.emptyList());
+                return instanceDto;
+            }
+
+            if (historicProcessInstance.getEndTime() != null) {
+                instanceDto.setStatus("COMPLETED");
+                instanceDto.setCurrentStep("DONE");
+                instanceDto.setAssignee(null);
 
                 // Khi quy trình xong, dữ liệu trong RuntimeService sẽ bị xoá, phải lấy từ HistoryService
                 List<HistoricVariableInstance> historicVars = historyService
@@ -124,12 +152,38 @@ public class WorkflowServiceImpl implements WorkflowService {
                 for (HistoricVariableInstance var : historicVars) {
                     historyVariables.put(var.getName(), var.getValue());
                 }
-                statusDto.setVariables(historyVariables);
+                instanceDto.setVariables(historyVariables);
             } else {
-                statusDto.setStatus("NOT_FOUND");
+                instanceDto.setStatus("PROCESSING");
+                instanceDto.setCurrentStep("SYSTEM_PROCESSING");
+                instanceDto.setActions(Collections.emptyList()); // Đang xử lý tự động -> chưa có user action
+
+                Map<String, Object> runtimeVariables = runtimeService.getVariables(historicProcessInstance.getId());
+                instanceDto.setVariables(runtimeVariables);
             }
         }
-        return statusDto;
+        return instanceDto;
+    }
+
+    @Override
+    public List<Action> getTaskActions(String taskId) {
+        Object actionsRaw = taskService.getVariable(taskId, "actions");
+
+        if (actionsRaw == null) {
+            return Collections.emptyList();
+        }
+
+        try {
+            // Nếu actions lưu dạng JSON String trong Camunda Variable
+            if (actionsRaw instanceof String jsonString) {
+                return objectMapper.readValue(jsonString, new TypeReference<>() {});
+            }
+            // Nếu đã lưu dạng List Object sẵn
+            return objectMapper.convertValue(actionsRaw, new TypeReference<>() {});
+        } catch (Exception e) {
+            // Log error nếu cần
+            return Collections.emptyList();
+        }
     }
 
     @Override

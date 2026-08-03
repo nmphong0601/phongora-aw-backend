@@ -1,22 +1,18 @@
-package com.aw.workflow.model;
+package com.aw.common.dto.res;
 
-import com.aw.common.dto.res.Action;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 @Data
-public class WorkflowInstance {
-    private Integer id;
+public class WorkflowInstanceResponse {
     private String proposalId;
     private String status;
     private String currentStep;
     private String assignee;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
     private Map<String, Object> variables;
     private List<Action> actions;
     private Set<String> candidateGroups;

@@ -1,5 +1,6 @@
 package com.aw.hr.service.impl;
 
+import com.aw.common.dto.res.WorkflowInstanceResponse;
 import com.aw.common.event.WorkflowStartEvent;
 import com.aw.common.response.ApiResponse;
 import com.aw.common.security.SecurityUtils;
@@ -8,7 +9,6 @@ import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
 import com.aw.hr.dto.req.PerformWorkflowRequest;
 import com.aw.hr.dto.res.CreateHeadcountPlanResponse;
 import com.aw.hr.dto.res.PerformWorkflowResponse;
-import com.aw.hr.dto.res.WorkflowStatusResponse;
 import com.aw.hr.dto.res.headcount.plan.HeadcountPlanDetailResponse;
 import com.aw.hr.entity.HeadcountPlanEntity;
 import com.aw.hr.mapper.HeadcountPlanMapper;
@@ -103,25 +103,22 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
         // Gọi Workflow lấy dữ liệu động ghép vào
         try {
             String endpoint = String.format("%s/api/v1/workflow/status/%s", workflowServiceUrl, id.toString());
-            ResponseEntity<ApiResponse<WorkflowStatusResponse>> responseEntity = restTemplate.exchange(
+            ResponseEntity<ApiResponse<WorkflowInstanceResponse>> responseEntity = restTemplate.exchange(
                     endpoint,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<>() {}
             );
 
-            ApiResponse<WorkflowStatusResponse> apiResponse = responseEntity.getBody();
+            ApiResponse<WorkflowInstanceResponse> apiResponse = responseEntity.getBody();
 
             if (apiResponse != null && apiResponse.getData() != null) {
-                WorkflowStatusResponse wfStatus = apiResponse.getData();
-                response.setWorkflowStatus(wfStatus.getStatus());
-                response.setCurrentTaskName(wfStatus.getCurrentStep());
-                response.setAssignee(wfStatus.getAssignee());
-                response.setWorkflowVariables(wfStatus.getVariables());
+                WorkflowInstanceResponse wfInstance = apiResponse.getData();
+                response.setWorkflowInstance(wfInstance);
             }
         } catch (Exception e) {
             log.warn("Lỗi khi gọi Workflow Service cho plan {}: {}", id, e.getMessage());
-            response.setWorkflowStatus("UNKNOWN");
+            response.setWorkflowInstance(null);
         }
 
         return response;
