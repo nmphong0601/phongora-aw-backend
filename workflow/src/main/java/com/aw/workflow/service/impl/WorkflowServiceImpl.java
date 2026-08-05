@@ -1,8 +1,12 @@
 package com.aw.workflow.service.impl;
 
+import com.aw.common.dto.req.PerformWorkflowRequest;
 import com.aw.common.dto.res.Action;
+import com.aw.common.dto.res.PerformWorkflowResponse;
 import com.aw.common.event.WorkflowStartEvent;
 import com.aw.common.event.WorkflowStartedEvent;
+import com.aw.common.security.UserPrincipal;
+import com.aw.common.util.PermissionUtils;
 import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
@@ -19,7 +23,9 @@ import org.camunda.bpm.engine.task.IdentityLink;
 import org.camunda.bpm.engine.task.IdentityLinkType;
 import org.camunda.bpm.engine.task.Task;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -187,29 +193,131 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     @Override
-    public void processTask(ProcessTaskRequest request) {
-        log.info("[Camunda] Tiến hành giải quyết Task cho Proposal: {}, Hành động: {}, Người xử lý: {}",
-                request.getProposalId(), request.getAction(), request.getActor());
+    public PerformWorkflowResponse performWorkflowTask(PerformWorkflowRequest request, UserPrincipal currentUser) {
 
-        // 1. Tìm Task đang chờ của quy trình dựa trên businessKey (proposalId)
-        Task task = taskService.createTaskQuery()
-                .processInstanceBusinessKey(request.getProposalId())
+        // ==========================================
+        // 1: LẤY TASK VÀ KIỂM TRA QUYỀN
+        // ==========================================
+        String proposalId = request.getProposalId();
+        Task currentTask = taskService.createTaskQuery()
+                .processInstanceBusinessKey(proposalId)
                 .singleResult();
 
-        if (task == null) {
-            throw new RuntimeException("Không tìm thấy bước quy trình nào đang chờ phê duyệt cho Đề xuất này!");
+        if (currentTask == null) {
+            throw new IllegalArgumentException("Không tìm thấy tác vụ đang chờ xử lý cho Proposal: " + proposalId);
         }
 
-        // 2. Định nghĩa các biến quyết định hướng đi trong BPMN (approved = true/false)
+        // Trích xuất Identity Links từ Camunda
+        List<IdentityLink> identityLinks = taskService.getIdentityLinksForTask(currentTask.getId());
+
+        Set<String> candidateGroups = identityLinks.stream()
+                .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getGroupId() != null)
+                .map(IdentityLink::getGroupId)
+                .collect(Collectors.toSet());
+
+        Set<String> candidateUsers = identityLinks.stream()
+                .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getUserId() != null)
+                .map(IdentityLink::getUserId)
+                .collect(Collectors.toSet());
+
+        // Kiểm tra quyền bằng Utility đã tạo
+        boolean hasPermission = PermissionUtils.checkWorkflowPermission(
+                currentUser,
+                currentTask.getAssignee(),
+                candidateUsers,
+                candidateGroups
+        );
+
+        if (!hasPermission) {
+            throw new AccessDeniedException("Bạn không có quyền xử lý tác vụ này!");
+        }
+
+        // ==========================================
+        // 2: CHUẨN BỊ BIẾN VÀ COMPLETE TASK
+        // ==========================================
         Map<String, Object> variables = new HashMap<>();
-        boolean isApproved = "APPROVE".equalsIgnoreCase(request.getAction());
-        variables.put("approved", isApproved);
-        variables.put("lastActor", request.getActor());
+        variables.put("action", request.getAction()); // Biến quan trọng để rẽ nhánh Gateway
 
-        // 3. Ủy quyền (claim) và hoàn thành (complete) Task để Camunda chạy tiếp luồng sang Gateway
-        taskService.claim(task.getId(), request.getActor());
-        taskService.complete(task.getId(), variables);
+        if (StringUtils.hasText(request.getNote())) {
+            variables.put("note", request.getNote());
+        }
 
-        log.info("[Camunda] Đã hoàn thành Task: '{}'. Quy trình được tiếp tục điều hướng tự động.", task.getName());
+        // Nếu Request có truyền người/nhóm xử lý tiếp theo -> Đẩy vào Variable để Camunda binding cho Task sau
+        if (StringUtils.hasText(request.getAssignee())) {
+            variables.put("assignee", request.getAssignee());
+        }
+        if (StringUtils.hasText(request.getCandidateGroup())) {
+            variables.put("candidateGroup", request.getCandidateGroup());
+        }
+        if (StringUtils.hasText(request.getCandidateUser())) {
+            variables.put("candidateUser", request.getCandidateUser());
+        }
+
+        // Ủy quyền (claim)
+        taskService.claim(currentTask.getId(), request.getAssignee());
+
+        // Hoàn thành tác vụ hiện tại
+        taskService.complete(currentTask.getId(), variables);
+
+        // ==========================================
+        // 3: XÁC ĐỊNH TRẠNG THÁI TIẾP THEO
+        // ==========================================
+        PerformWorkflowResponse response = new PerformWorkflowResponse();
+
+        // Dùng list() thay vì singleResult() vì có thể Workflow rẽ nhánh song song (Parallel Gateway) sinh ra nhiều Task cùng lúc
+        List<Task> nextTasks = taskService.createTaskQuery()
+                .processInstanceBusinessKey(proposalId)
+                .list();
+
+        if (nextTasks != null && !nextTasks.isEmpty()) {
+            // Workflow vẫn tiếp tục ở các User Task tiếp theo
+            response.setStatus("PENDING");
+
+            Set<String> nextAssignees = new HashSet<>();
+            Set<String> nextCandidateGroups = new HashSet<>();
+            Set<String> nextCandidateUsers = new HashSet<>();
+
+            for (Task task : nextTasks) {
+                if (task.getAssignee() != null) {
+                    nextAssignees.add(task.getAssignee());
+                }
+
+                List<IdentityLink> nextLinks = taskService.getIdentityLinksForTask(task.getId());
+
+                nextCandidateGroups.addAll(nextLinks.stream()
+                        .filter(l -> IdentityLinkType.CANDIDATE.equals(l.getType()) && l.getGroupId() != null)
+                        .map(IdentityLink::getGroupId)
+                        .collect(Collectors.toSet()));
+
+                nextCandidateUsers.addAll(nextLinks.stream()
+                        .filter(l -> IdentityLinkType.CANDIDATE.equals(l.getType()) && l.getUserId() != null)
+                        .map(IdentityLink::getUserId)
+                        .collect(Collectors.toSet()));
+            }
+
+            response.setNextAssignees(nextAssignees);
+            response.setNextCandidateGroups(nextCandidateGroups);
+            response.setNextCandidateUsers(nextCandidateUsers);
+
+        } else {
+            // Nếu không còn User Task nào, kiểm tra xem Tiến trình đã kết thúc chưa
+            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceBusinessKey(proposalId)
+                    .orderByProcessInstanceStartTime()
+                    .desc()
+                    .list().stream().findFirst().orElse(null);
+
+            if (historicProcessInstance != null && historicProcessInstance.getEndTime() != null) {
+                response.setStatus("COMPLETED");
+            } else {
+                response.setStatus("SYSTEM_PROCESSING"); // Đang xử lý tự động (Service Task)
+            }
+
+            response.setNextAssignees(Collections.emptySet());
+            response.setNextCandidateGroups(Collections.emptySet());
+            response.setNextCandidateUsers(Collections.emptySet());
+        }
+
+        return response;
     }
 }

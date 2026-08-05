@@ -18,6 +18,9 @@ public interface HeadcountPlanMapper {
     // Truy vấn chi tiết theo ID
     HeadcountPlanEntity findById(@Param("id") UUID id);
 
+    // Truy vấn chi tiết theo Workflow Instance ID
+    HeadcountPlanEntity findByWorkflowInstanceId(@Param("workflowInstanceId") UUID workflowInstanceId);
+
     // Khởi tạo bản nháp Kế hoạch định biên
     void insertHeadcountPlan(HeadcountPlanEntity plan);
 
@@ -46,6 +49,6 @@ public interface HeadcountPlanMapper {
     // Xóa định biên (Thường chỉ cho phép xóa nếu đang là DRAFT)
     void deleteById(@Param("id") UUID id);
 
-    // Thêm method update workflow_instance_id
+    // Update workflow_instance_id
     void updateWorkflowInstanceId(@Param("id") UUID id, @Param("workflowInstanceId") UUID workflowInstanceId);
 }

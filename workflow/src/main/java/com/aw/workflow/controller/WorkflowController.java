@@ -1,6 +1,10 @@
 package com.aw.workflow.controller;
 
+import com.aw.common.dto.req.PerformWorkflowRequest;
+import com.aw.common.dto.res.PerformWorkflowResponse;
 import com.aw.common.response.ApiResponse;
+import com.aw.common.security.SecurityUtils;
+import com.aw.common.security.UserPrincipal;
 import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
@@ -31,9 +35,14 @@ public class WorkflowController {
                     description = "Thông tin xử lý Task của quy trình Camunda"
             )
     })
-    @PostMapping("/process")
-    public ApiResponse<String> processTask(@RequestBody ProcessTaskRequest request) {
-        workflowService.processTask(request);
-        return ApiResponse.success("Xử lý bước quy trình Camunda thành công!");
+    @PostMapping("/perform/{proposalId}")
+    public ApiResponse<PerformWorkflowResponse> performTask(
+            @PathVariable String proposalId,
+            @RequestBody PerformWorkflowRequest request) {
+        if (proposalId != null && !proposalId.isEmpty()) {
+            request.setProposalId(proposalId);
+        }
+        UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        return ApiResponse.success(workflowService.performWorkflowTask(request, currentUser));
     }
 }

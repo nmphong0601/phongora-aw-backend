@@ -47,6 +47,11 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByWorkflowInstanceId" resultMap="HeadcountPlanResultMap">
+        SELECT * FROM headcount_plans
+        WHERE workflow_instance_id = #{workflowInstanceId}
+    </select>
+
     <select id="findByDepartmentAndYear" resultMap="HeadcountPlanResultMap">
         SELECT * FROM headcount_plans
         WHERE department_id = #{departmentId}

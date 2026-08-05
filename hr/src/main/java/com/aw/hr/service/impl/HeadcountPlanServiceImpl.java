@@ -5,11 +5,11 @@ import com.aw.common.event.WorkflowStartEvent;
 import com.aw.common.response.ApiResponse;
 import com.aw.common.security.SecurityUtils;
 import com.aw.common.util.ObjectMapperUtils;
-import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
-import com.aw.hr.dto.req.PerformWorkflowRequest;
-import com.aw.hr.dto.res.CreateHeadcountPlanResponse;
-import com.aw.hr.dto.res.PerformWorkflowResponse;
+import com.aw.hr.dto.req.headcount.plan.CreateHeadcountPlanRequest;
+import com.aw.hr.dto.req.headcount.plan.UpdateHeadcountPlanRequest;
+import com.aw.hr.dto.res.headcount.plan.CreateHeadcountPlanResponse;
 import com.aw.hr.dto.res.headcount.plan.HeadcountPlanDetailResponse;
+import com.aw.hr.dto.res.headcount.plan.UpdateHeadcountPlanResponse;
 import com.aw.hr.entity.HeadcountPlanEntity;
 import com.aw.hr.mapper.HeadcountPlanMapper;
 import com.aw.hr.service.HeadcountPlanService;
@@ -17,14 +17,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+
+import static com.aw.common.util.PermissionUtils.checkWorkflowPermission;
 
 @Slf4j
 @Service
@@ -87,6 +88,35 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
     }
 
     @Override
+    public UpdateHeadcountPlanResponse update(UpdateHeadcountPlanRequest request) {
+        // Chuẩn bị Entity lưu vào Database
+        HeadcountPlanEntity entity = new HeadcountPlanEntity();
+        entity.setId(UUID.randomUUID());
+        entity.setDepartmentId(request.getDepartmentId());
+        entity.setTitleId(request.getTitleId());
+        entity.setPlanYear(request.getPlanYear());
+        entity.setTargetCount(request.getTargetCount());
+        entity.setCurrentCount(request.getCurrentCount());
+        entity.setStatus(request.getStatus());
+        entity.setCreatedBy(SecurityUtils.getCurrentUserId());
+
+        // Lưu vào database
+        headcountPlanMapper.insertHeadcountPlan(entity);
+
+        // Trả kết quả về cho client
+        UpdateHeadcountPlanResponse response = new UpdateHeadcountPlanResponse();
+        response.setId(entity.getId());
+        response.setDepartmentId(entity.getDepartmentId());
+        response.setTitleId(entity.getTitleId());
+        response.setPlanYear(entity.getPlanYear());
+        response.setTargetCount(entity.getTargetCount());
+        response.setCurrentCount(entity.getCurrentCount());
+        response.setStatus(entity.getStatus());
+
+        return response;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<HeadcountPlanEntity> findAll() {
         return headcountPlanMapper.findAll();
@@ -114,6 +144,15 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
 
             if (apiResponse != null && apiResponse.getData() != null) {
                 WorkflowInstanceResponse wfInstance = apiResponse.getData();
+
+                if (!checkWorkflowPermission(
+                        SecurityUtils.getCurrentUser(),
+                        wfInstance.getAssignee(),
+                        wfInstance.getCandidateUsers(),
+                        wfInstance.getCandidateGroups())) {
+                    wfInstance = null;
+                }
+
                 response.setWorkflowInstance(wfInstance);
             }
         } catch (Exception e) {
@@ -132,10 +171,12 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
     }
 
     @Override
-    @Transactional
-    public PerformWorkflowResponse performWorkflowTask(PerformWorkflowRequest request) {
-        PerformWorkflowResponse res = new PerformWorkflowResponse();
+    public void updateWorkflowStatus(UUID planId, UUID workflowInstanceId, String status) {
+        headcountPlanMapper.updateWorkflowStatus(planId, status, workflowInstanceId);
+    }
 
-        return res;
+    @Override
+    public HeadcountPlanEntity findById(UUID id) {
+        return headcountPlanMapper.findById(id);
     }
 }

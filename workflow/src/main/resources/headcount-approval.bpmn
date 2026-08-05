@@ -5,33 +5,6 @@
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Activity_Requester_Review" />
-    <bpmn:userTask id="Activity_Requester_Review" name="New Request" camunda:assignee="${requester}" camunda:candidateGroups="ROLE_HR_EXEC">
-      <bpmn:extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="actions">[
-   {
-	"label": "Cancel",
-	"value": "CANCEL"
-   },
-   {
-	"label": "Edit",
-	"value": "EDIT"
-   },
-   {
-	"label": "Submit",
-	"value": "SUBMIT"
-   }
-]</camunda:inputParameter>
-        </camunda:inputOutput>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1</bpmn:incoming>
-      <bpmn:incoming>Flow_Editted</bpmn:incoming>
-      <bpmn:incoming>Flow_HR_Returned</bpmn:incoming>
-      <bpmn:incoming>Flow_DIV_Returned</bpmn:incoming>
-      <bpmn:incoming>Flow_BR_Returned</bpmn:incoming>
-      <bpmn:incoming>Flow_GD_Return</bpmn:incoming>
-      <bpmn:outgoing>Flow_2</bpmn:outgoing>
-    </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Requester_Review" targetRef="Gateway_Requester_Decision" />
     <bpmn:exclusiveGateway id="Gateway_Requester_Decision" name="Requester submit?">
       <bpmn:incoming>Flow_2</bpmn:incoming>
@@ -48,10 +21,11 @@
     <bpmn:serviceTask id="Activity_Complete_Workflow" name="Notificate for Document Service" camunda:delegateExpression="${workflowCompletedDelegate}">
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:inputParameter name="proposalId">headcount-plan-approval</camunda:inputParameter>
+          <camunda:inputParameter name="proposalId">${proposalId}</camunda:inputParameter>
           <camunda:inputParameter name="candidateUsers">${assignees}</camunda:inputParameter>
           <camunda:inputParameter name="candidateRoles">ROLE_GD</camunda:inputParameter>
           <camunda:inputParameter name="action">${decision}</camunda:inputParameter>
+          <camunda:inputParameter name="proposalType">HC_PLAN</camunda:inputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_GD_Approved</bpmn:incoming>
@@ -65,12 +39,30 @@
       <bpmn:incoming>Flow_Cancelled</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:userTask id="Activity_General_Director_Review" name="GD" camunda:candidateGroups="ROLE_GD">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${taskCompletedDelegate}" event="end">
+          <camunda:field name="proposalId">
+            <camunda:expression>${proposalId}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="proposalType">
+            <camunda:string>HC_PLAN</camunda:string>
+          </camunda:field>
+          <camunda:field name="status">
+            <camunda:expression>${status}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="assignee">
+            <camunda:expression>${assignee}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateGroup">
+            <camunda:expression>${candidateGroup}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateUser">
+            <camunda:expression>${candidateUser}</camunda:expression>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1r3ri5i</bpmn:incoming>
       <bpmn:outgoing>Flow_16z4e70</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:userTask id="Activity_HR_Review" name="HR Manager" camunda:candidateGroups="ROLE_HR_MANAGER">
-      <bpmn:incoming>Flow_120g2gq</bpmn:incoming>
-      <bpmn:outgoing>Flow_1t50sby</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_HR_Decision" name="HR Manager approve?">
       <bpmn:incoming>Flow_1t50sby</bpmn:incoming>
@@ -97,10 +89,6 @@
     <bpmn:sequenceFlow id="Flow_HR_Approved" name="Approve" sourceRef="Gateway_HR_Decision" targetRef="Gateway_1xwugbd">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "APPROVE"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:userTask id="Activity_DIV_Director_Review" name="Dvision Director" camunda:candidateGroups="ROLE_DIV_DIRECTOR">
-      <bpmn:incoming>Flow_0yc81wa</bpmn:incoming>
-      <bpmn:outgoing>Flow_0gk12w0</bpmn:outgoing>
-    </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_DIV_Rejected" name="Reject" sourceRef="Gateway_DIV_Decision" targetRef="Event_Workflow_Rejected">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "REJECT"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -114,10 +102,6 @@
     <bpmn:sequenceFlow id="Flow_DIV_Returned" name="Return" sourceRef="Gateway_DIV_Decision" targetRef="Activity_Requester_Review">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "RETURN"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:userTask id="Activity_BR_Director_Review" name="Branch Director" camunda:candidateGroups="ROLE_BR_DIRECTOR">
-      <bpmn:incoming>Flow_14p0971</bpmn:incoming>
-      <bpmn:outgoing>Flow_0221bgq</bpmn:outgoing>
-    </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_DIV_Approved" name="Approve" sourceRef="Gateway_DIV_Decision" targetRef="Gateway_0b2v8t2">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "APPROVE"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -217,19 +201,134 @@
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_1uvexon" sourceRef="Gateway_1uvbyzv" targetRef="Activity_1m2wnqr" />
     <bpmn:sequenceFlow id="Flow_1r3ri5i" sourceRef="Gateway_1uvbyzv" targetRef="Activity_General_Director_Review" />
+    <bpmn:userTask id="Activity_BR_Director_Review" name="Branch Director" camunda:candidateGroups="ROLE_BR_DIRECTOR">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${taskCompletedDelegate}" event="end">
+          <camunda:field name="proposalId">
+            <camunda:expression>${proposalId}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="proposalType">
+            <camunda:string>HC_PLAN</camunda:string>
+          </camunda:field>
+          <camunda:field name="status">
+            <camunda:expression>${status}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="assignee">
+            <camunda:expression>${assignee}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateGroup">
+            <camunda:expression>${candidateGroup}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateUser">
+            <camunda:expression>${candidateUser}</camunda:expression>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_14p0971</bpmn:incoming>
+      <bpmn:outgoing>Flow_0221bgq</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_DIV_Director_Review" name="Dvision Director" camunda:candidateGroups="ROLE_DIV_DIRECTOR">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${taskCompletedDelegate}" event="end">
+          <camunda:field name="proposalId">
+            <camunda:expression>${proposalId}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="proposalType">
+            <camunda:string>HC_PLAN</camunda:string>
+          </camunda:field>
+          <camunda:field name="status">
+            <camunda:expression>${status}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="assignee">
+            <camunda:expression>${assignee}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateGroup">
+            <camunda:expression>${candidateGroup}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateUser">
+            <camunda:expression>${candidateUser}</camunda:expression>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0yc81wa</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gk12w0</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_HR_Review" name="HR Manager" camunda:candidateGroups="ROLE_HR_MANAGER">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${taskCompletedDelegate}" event="end">
+          <camunda:field name="proposalId">
+            <camunda:expression>${proposalId}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="proposalType">
+            <camunda:string>HC_PLAN</camunda:string>
+          </camunda:field>
+          <camunda:field name="status">
+            <camunda:expression>${status}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="assignee">
+            <camunda:expression>${assignee}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateGroup">
+            <camunda:expression>${candidateGroup}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateUser">
+            <camunda:expression>${candidateUser}</camunda:expression>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_120g2gq</bpmn:incoming>
+      <bpmn:outgoing>Flow_1t50sby</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_Requester_Review" name="New Request" camunda:assignee="${requester}" camunda:candidateGroups="ROLE_HR_EXEC">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${taskCompletedDelegate}" event="end">
+          <camunda:field name="proposalId">
+            <camunda:expression>${proposalId}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="proposalType">
+            <camunda:string>HC_PLAN</camunda:string>
+          </camunda:field>
+          <camunda:field name="status">
+            <camunda:expression>${status}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="assignee">
+            <camunda:expression>${assignee}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateGroup">
+            <camunda:expression>${candidateGroup}</camunda:expression>
+          </camunda:field>
+          <camunda:field name="candidateUser">
+            <camunda:expression>${candidateUser}</camunda:expression>
+          </camunda:field>
+        </camunda:executionListener>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="actions">[
+   {
+	"label": "Cancel",
+	"value": "CANCEL"
+   },
+   {
+	"label": "Edit",
+	"value": "EDIT"
+   },
+   {
+	"label": "Submit",
+	"value": "SUBMIT"
+   }
+]</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Editted</bpmn:incoming>
+      <bpmn:incoming>Flow_GD_Return</bpmn:incoming>
+      <bpmn:incoming>Flow_BR_Returned</bpmn:incoming>
+      <bpmn:incoming>Flow_DIV_Returned</bpmn:incoming>
+      <bpmn:incoming>Flow_HR_Returned</bpmn:incoming>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="headcount-plan-approval">
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="Start" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
-        <dc:Bounds x="179" y="199" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="181" y="241" width="34" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1_di" bpmnElement="Activity_Requester_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="306" y="177" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1_di" bpmnElement="Gateway_Requester_Decision" isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
         <dc:Bounds x="495" y="395" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -256,9 +355,6 @@
         <dc:Bounds x="2310" y="380" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_09fce2p_di" bpmnElement="Activity_HR_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="770" y="380" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0dzus3c_di" bpmnElement="Gateway_HR_Decision" isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
         <dc:Bounds x="985" y="395" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -271,19 +367,11 @@
           <dc:Bounds x="2518" y="607" width="44" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_00omyih_di" bpmnElement="Activity_DIV_Director_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1300" y="380" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_12ivlfh_di" bpmnElement="Gateway_DIV_Decision" isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
         <dc:Bounds x="1505" y="395" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1426" y="383" width="88" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1x87t0f" bpmnElement="Activity_BR_Director_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1790" y="380" width="100" height="80" />
-        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1455ie3_di" bpmnElement="Gateway_BR_Decision" isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
         <dc:Bounds x="2015" y="395" width="50" height="50" />
@@ -325,13 +413,35 @@
       <bpmndi:BPMNShape id="BPMNShape_025plfi" bpmnElement="Gateway_1uvbyzv">
         <dc:Bounds x="2175" y="395" width="50" height="50" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1aotbiz" bpmnElement="Activity_BR_Director_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1790" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_03y23a1" bpmnElement="Activity_DIV_Director_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1300" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1kazsw2" bpmnElement="Activity_HR_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="770" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0kw4mxa" bpmnElement="Activity_Requester_Review" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="290" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="Start" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
+        <dc:Bounds x="179" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="181" y="274" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
-        <di:waypoint x="215" y="217" />
-        <di:waypoint x="306" y="217" />
+        <di:waypoint x="215" y="250" />
+        <di:waypoint x="290" y="250" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
-        <di:waypoint x="406" y="217" />
-        <di:waypoint x="520" y="217" />
+        <di:waypoint x="390" y="250" />
+        <di:waypoint x="520" y="250" />
         <di:waypoint x="520" y="395" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_Submitted">
@@ -358,17 +468,17 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1etetqu_di" bpmnElement="Flow_Editted">
         <di:waypoint x="495" y="420" />
-        <di:waypoint x="356" y="420" />
-        <di:waypoint x="356" y="257" />
+        <di:waypoint x="340" y="420" />
+        <di:waypoint x="340" y="293" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="367" y="333" width="19" height="14" />
+          <dc:Bounds x="351" y="350" width="19" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0u6oayq_di" bpmnElement="Flow_HR_Returned">
         <di:waypoint x="1010" y="395" />
         <di:waypoint x="1010" y="80" />
-        <di:waypoint x="356" y="80" />
-        <di:waypoint x="356" y="177" />
+        <di:waypoint x="340" y="80" />
+        <di:waypoint x="340" y="210" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1023" y="303" width="34" height="14" />
         </bpmndi:BPMNLabel>
@@ -403,8 +513,8 @@
       <bpmndi:BPMNEdge id="Flow_0bu4g56_di" bpmnElement="Flow_DIV_Returned">
         <di:waypoint x="1530" y="395" />
         <di:waypoint x="1530" y="80" />
-        <di:waypoint x="356" y="80" />
-        <di:waypoint x="356" y="177" />
+        <di:waypoint x="340" y="80" />
+        <di:waypoint x="340" y="210" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1543" y="303" width="34" height="14" />
         </bpmndi:BPMNLabel>
@@ -431,8 +541,8 @@
       <bpmndi:BPMNEdge id="Flow_1aqigrd_di" bpmnElement="Flow_BR_Returned">
         <di:waypoint x="2040" y="395" />
         <di:waypoint x="2040" y="80" />
-        <di:waypoint x="356" y="80" />
-        <di:waypoint x="356" y="177" />
+        <di:waypoint x="340" y="80" />
+        <di:waypoint x="340" y="210" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="2053" y="303" width="34" height="14" />
         </bpmndi:BPMNLabel>
@@ -465,8 +575,8 @@
       <bpmndi:BPMNEdge id="Flow_0rrbsby_di" bpmnElement="Flow_GD_Return">
         <di:waypoint x="2540" y="395" />
         <di:waypoint x="2540" y="80" />
-        <di:waypoint x="356" y="80" />
-        <di:waypoint x="356" y="177" />
+        <di:waypoint x="340" y="80" />
+        <di:waypoint x="340" y="210" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="2550" y="303" width="34" height="14" />
         </bpmndi:BPMNLabel>

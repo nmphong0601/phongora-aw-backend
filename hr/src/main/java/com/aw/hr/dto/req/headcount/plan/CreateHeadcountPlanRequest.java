@@ -1,4 +1,4 @@
-package com.aw.hr.dto.req;
+package com.aw.hr.dto.req.headcount.plan;
 
 import lombok.Data;
 

@@ -1,8 +1,8 @@
 package com.aw.hr.controller;
 
 import com.aw.common.response.ApiResponse;
-import com.aw.hr.dto.req.CreateHeadcountPlanRequest;
-import com.aw.hr.dto.res.CreateHeadcountPlanResponse;
+import com.aw.hr.dto.req.headcount.plan.CreateHeadcountPlanRequest;
+import com.aw.hr.dto.res.headcount.plan.CreateHeadcountPlanResponse;
 import com.aw.hr.dto.res.headcount.plan.HeadcountPlanDetailResponse;
 import com.aw.hr.entity.HeadcountPlanEntity;
 import com.aw.hr.service.HeadcountPlanService;

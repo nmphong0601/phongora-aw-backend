@@ -1,4 +1,4 @@
-package com.aw.hr.dto.res;
+package com.aw.hr.dto.res.headcount.plan;
 
 import lombok.Data;
 import java.util.UUID;
