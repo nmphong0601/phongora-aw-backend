@@ -65,9 +65,9 @@ spring:
         - id: workflow-route
           uri: http://localhost:8087 # Địa chỉ thực của workflow-services
           predicates:
-            - Path=/api/v1/workflow/**
+            - Path=/api/v1/process/**
           filters:
-            - RewritePath=/api/v1/workflow/(?<segment>.*), /$\{segment}
+            - RewritePath=/api/v1/process/(?<segment>.*), /api/v1/workflow/${segment}
 
         # Route dành riêng cho giao diện Camunda Webapp
         - id: camunda-webapp-route

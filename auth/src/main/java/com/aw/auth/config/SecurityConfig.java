@@ -40,7 +40,6 @@ public class SecurityConfig {
                         // Mở API đăng nhập và đăng ký
                         .requestMatchers("/api/v1/login", "/api/v1/register").permitAll()
                         .requestMatchers("/api-docs", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/camunda","/camunda-welcome","/camunda/**").permitAll()
                         // Các API khác yêu cầu xác thực (nếu gọi trực tiếp không qua Gateway)
                         .anyRequest().authenticated()
                 );

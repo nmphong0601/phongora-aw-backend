@@ -25,11 +25,13 @@ public class NotificationDelegate implements JavaDelegate {
         String subject = (String) execution.getVariable("notificationTitle");
         String content = (String) execution.getVariable("notificationContent");
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(recipients);
-        message.setSubject(subject);
-        message.setText(content);
+        if (recipients != null && !recipients.isEmpty()) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(recipients);
+            message.setSubject(subject);
+            message.setText(content);
 
-        mailSender.send(message);
+            mailSender.send(message);
+        }
     }
 }

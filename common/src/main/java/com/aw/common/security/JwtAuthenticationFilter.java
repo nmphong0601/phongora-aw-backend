@@ -33,6 +33,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final StringRedisTemplate redisTemplate;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // Skip JWT validation for Camunda and engine-rest endpoints
+        return path.startsWith("/camunda")
+                || path.startsWith("/camunda-welcome")
+                || path.startsWith("/engine-rest");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

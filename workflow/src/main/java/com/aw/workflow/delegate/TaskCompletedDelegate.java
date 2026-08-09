@@ -24,7 +24,7 @@ public class TaskCompletedDelegate implements JavaDelegate {
         String assignee = (String) execution.getVariable("assignee");
         String user = (String) execution.getVariable("candidateUser");
         String role = (String) execution.getVariable("candidateRoles");
-        String action = (String) execution.getVariable("action");
+        String action = (String) execution.getVariable("decision");
 
         String status = "APPROVED";
         status = switch (action) {

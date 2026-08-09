@@ -67,9 +67,20 @@ camunda:
       properties:
         historyTimeToLive: P30D # Định dạng ISO-8601 (P30D = Period of 30 Days)
 
+# Cấu hình JWT (Secret này PHẢI KHỚP với Secret cấu hình bên Gateway)
+jwt:
+  secret: phongora-vnF3A51D86CB9047E21A6E9CF5D14B7382E8570AD1C63E492FB04A7E9C52D8163F
+  expiration: 86400000 # Thời gian sống của Token (1 ngày tính bằng ms)
+  refresh-expiration: 604800000  # 7 ngày
+
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
+
+# Bật log để xem câu lệnh SQL thực thi của MyBatis (thay thế cho jpa.show-sql)
+logging:
+  level:
+    com.aw.auth.mapper: DEBUG
 
 springdoc:
   api-docs:

@@ -5,7 +5,6 @@ import com.aw.common.dto.res.PerformWorkflowResponse;
 import com.aw.common.response.ApiResponse;
 import com.aw.common.security.SecurityUtils;
 import com.aw.common.security.UserPrincipal;
-import com.aw.workflow.dto.ProcessTaskRequest;
 import com.aw.workflow.model.WorkflowInstance;
 import com.aw.workflow.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;

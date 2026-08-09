@@ -236,7 +236,9 @@ public class WorkflowServiceImpl implements WorkflowService {
         // 2: CHUẨN BỊ BIẾN VÀ COMPLETE TASK
         // ==========================================
         Map<String, Object> variables = new HashMap<>();
-        variables.put("action", request.getAction()); // Biến quan trọng để rẽ nhánh Gateway
+        variables.put("proposalId", request.getProposalId());
+        variables.put("proposalType", request.getProposalType());
+        variables.put("decision", request.getAction()); // Biến quan trọng để rẽ nhánh Gateway
 
         if (StringUtils.hasText(request.getNote())) {
             variables.put("note", request.getNote());
@@ -252,6 +254,11 @@ public class WorkflowServiceImpl implements WorkflowService {
         if (StringUtils.hasText(request.getCandidateUser())) {
             variables.put("candidateUser", request.getCandidateUser());
         }
+
+        // Gửi email thông báo
+        variables.put("notificationTitle", "");
+        variables.put("notificationContent", "");
+        variables.put("recipientEmails", "");
 
         // Ủy quyền (claim)
         taskService.claim(currentTask.getId(), request.getAssignee());
