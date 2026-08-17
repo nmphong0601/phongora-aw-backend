@@ -18,6 +18,7 @@ public interface UserMapper {
     Optional<User> findByUsername(@Param("username") String username);
     boolean existsByUsername(@Param("username") String username);
     boolean existsByEmail(@Param("email") String email);
+    boolean existsByPhone(@Param("phone") String phone);
 
     // User CRUD
     // Đếm số lượng user để kiểm tra xem đã cần seed dữ liệu chưa

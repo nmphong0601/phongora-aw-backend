@@ -7,6 +7,9 @@
         <id property="id" column="id"/>
         <result property="username" column="username"/>
         <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="firstName" column="first_name"/>
+        <result property="lastName" column="last_name"/>
         <result property="password" column="password"/>
         <result property="isActive" column="is_active"/>
         <result property="employeeId" column="employee_id"/>
@@ -31,7 +34,7 @@
         SELECT u.*, ur.role_name
         FROM users u
         LEFT JOIN user_roles ur ON u.username = ur.user_name
-        WHERE u.username = #{username}
+        WHERE u.username = #{username} OR u.email = #{email} OR u.phone = #{phone}
     </select>
 
     <select id="existsByUsername" resultType="boolean">
@@ -42,19 +45,28 @@
         SELECT COUNT(1) FROM users WHERE email = #{email}
     </select>
 
+    <select id="existsByPhone" resultType="boolean">
+        SELECT COUNT(1) FROM users WHERE phone = #{phone}
+    </select>
+
     <insert id="insertUser">
-        INSERT INTO users (id, username, email, password, employee_id, is_active)
-        VALUES (#{id}, #{username}, #{email}, #{password}, #{employeeId}, #{isActive})
+        INSERT INTO users (id, username, email, phone, first_name, last_name, password, employee_id, is_active)
+        VALUES (#{id}, #{username}, #{email}, #{phone}, #{firstName}, #{lastName}, #{password}, #{employeeId}, #{isActive})
     </insert>
 
     <select id="findById" resultMap="UserResultMap">
-        SELECT id, username, password, email FROM users
+        SELECT id, username, password, email, phone, first_name, last_name FROM users
         WHERE id = #{id}
     </select>
 
     <update id="updateUser">
         UPDATE users
-        SET username = #{username}, password = #{password}, email = #{email}
+        SET username = #{username}
+          , password = #{password}
+          , email = #{email}
+          , phone = #{phone}
+          , first_name = #{firstName}
+          , last_name = #{lastName}
         WHERE id = #{id}
     </update>
 
@@ -119,17 +131,17 @@
     </select>
 
     <insert id="insertGroupRole">
-        INSERT INTO group_roles (group_id, role)
-        VALUES (#{groupId}, #{roleName})
+        INSERT INTO group_roles (group_name, role_name)
+        VALUES (#{groupName}, #{roleName})
     </insert>
 
     <delete id="deleteGroupRole">
         DELETE FROM group_roles
-        WHERE group_id = #{groupId} AND role = #{roleName}
+        WHERE group_name = #{groupName} AND role_name = #{roleName}
     </delete>
 
     <select id="findRolesByGroupId" resultType="java.lang.String">
-        SELECT role FROM group_roles WHERE group_id = #{groupId}
+        SELECT role_name FROM group_roles WHERE group_name = #{groupName}
     </select>
 
 </mapper>

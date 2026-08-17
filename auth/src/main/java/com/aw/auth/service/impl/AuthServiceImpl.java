@@ -26,6 +26,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,16 +62,28 @@ public class AuthServiceImpl implements AuthService {
         if (userMapper.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
+        if (userMapper.existsByPhone(request.getPhone())) {
+            throw new IllegalArgumentException("Phone number already exists");
+        }
 
         // 1. Tạo thực thể User
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
+                .phone(request.getPhone())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .roles(Collections.singleton("ROLE_STAFF"))
+                .roles(Collections.singleton("ROLE_USER"))
                 .isActive(true)
                 .build();
         user.setId(UUID.randomUUID());
+
+        Set<String> currentRoles = user.getRoles();
+        Set<String> insertRoles = request.getRoles();
+        currentRoles.addAll(insertRoles);
+        currentRoles = currentRoles.stream().filter(role -> !"ROLE_SYSTEM_ADMIN".equals(role)).collect(Collectors.toSet());
+        user.setRoles(currentRoles);
 
         // 2. Lưu User chính vào DB (ID tự tăng sẽ được đồng bộ vào object 'user')
         userMapper.insertUser(user);
@@ -94,9 +107,14 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid username or password");
         }
 
-        HrEmployeeResponse employeeInfo = Optional
-                .ofNullable(getEmployeeInfo(user))
-                .orElse(new HrEmployeeResponse());
+        HrEmployeeResponse employeeInfo = new HrEmployeeResponse();
+        String employeeId =  user.getEmployeeId() != null ? user.getEmployeeId().toString() : "";
+        if (!employeeId.isEmpty()) {
+            employeeInfo = Optional
+                    .ofNullable(getEmployeeInfo(user))
+                    .orElse(new HrEmployeeResponse());
+        }
+
         String accessToken = jwtService.generateAccessToken(
                 user.getUsername(),
                 user.getId(),
@@ -119,9 +137,14 @@ public class AuthServiceImpl implements AuthService {
         String username = jwtService.getUsernameFromToken(request.getRefreshToken());
         User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid token session"));
-        HrEmployeeResponse employeeInfo = Optional
-                .ofNullable(getEmployeeInfo(user))
-                .orElse(new HrEmployeeResponse());
+
+        HrEmployeeResponse employeeInfo = new HrEmployeeResponse();
+        String employeeId =  user.getEmployeeId() != null ? user.getEmployeeId().toString() : "";
+        if (!employeeId.isEmpty()) {
+            employeeInfo = Optional
+                    .ofNullable(getEmployeeInfo(user))
+                    .orElse(new HrEmployeeResponse());
+        }
 
         if (jwtService.validateToken(request.getRefreshToken())) {
             String newAccessToken = jwtService.generateAccessToken(
@@ -144,10 +167,22 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        HrEmployeeResponse employeeInfo = new HrEmployeeResponse();
+        String employeeId =  user.getEmployeeId() != null ? user.getEmployeeId().toString() : "";
+        if (!employeeId.isEmpty()) {
+            employeeInfo = Optional
+                    .ofNullable(getEmployeeInfo(user))
+                    .orElse(new HrEmployeeResponse());
+        }
+
         return UserProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .phone(user.getPhone())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .fullName(employeeInfo.getFullName())
                 .build();
     }
 

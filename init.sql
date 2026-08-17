@@ -6,15 +6,15 @@ CREATE DATABASE aw_hr;
 CREATE DATABASE aw_workflow;
 CREATE DATABASE aw_document;
 CREATE DATABASE aw_finance;
+CREATE DATABASE aw_ecommerce;
 
 -- Cấp toàn quyền cho user 'awuser' trên các database vừa tạo
-GRANT ALL PRIVILEGES ON DATABASE aw_master_data TO awuser;
 GRANT ALL PRIVILEGES ON DATABASE aw_auth TO awuser;
 GRANT ALL PRIVILEGES ON DATABASE aw_hr TO awuser;
 GRANT ALL PRIVILEGES ON DATABASE aw_workflow TO awuser;
-GRANT ALL PRIVILEGES ON DATABASE aw_proposal TO awuser;
 GRANT ALL PRIVILEGES ON DATABASE aw_document TO awuser;
 GRANT ALL PRIVILEGES ON DATABASE aw_finance TO awuser;
+GRANT ALL PRIVILEGES ON DATABASE aw_ecommerce TO awuser;
 
 -- I. Chuyển sang context database 'aw_auth' để tạo bảng
 \c aw_auth;
@@ -42,6 +42,9 @@ CREATE TABLE users (
                        username VARCHAR(50) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL, -- Mật khẩu băm (BCrypt)
                        email VARCHAR(100) UNIQUE NULL,
+                       phone VARCHAR(12) UNIQUE NULL,
+                       first_name VARCHAR(100) NULL,
+                       last_name VARCHAR(100) NULL,
                        is_active BOOLEAN DEFAULT TRUE,
                        employee_id UUID UNIQUE, -- Tham chiếu tới hồ sơ nhân sự
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -82,7 +85,7 @@ CREATE TABLE user_role_menus (
 -- --- INSERT DỮ LIỆU MẪU ---
 -- Tạo 3 Roles: admin, staff, manager
 INSERT INTO roles (name, description) VALUES
-                                              ('ROLE_ADMIN', 'Quản trị viên hệ thống'),
+                                              ('ROLE_SYSTEM_ADMIN', 'Quản trị viên hệ thống'),
                                               ('ROLE_STAFF', 'Nhân viên thông thường'),
                                               ('ROLE_LEADER', 'Trưởng nhóm'),
                                               ('ROLE_SUP', 'Giám sát'),
@@ -92,7 +95,11 @@ INSERT INTO roles (name, description) VALUES
                                               ('ROLE_ACC_MANAGER', 'Trưởng phòng Kế toán'),
                                               ('ROLE_DIV_DIRECTOR', 'Trưởng khối'),
                                               ('ROLE_BR_DIRECTOR', 'Giám đốc chi nhánh'),
-                                              ('ROLE_GD', 'Giám đốc');
+                                              ('ROLE_GD', 'Giám đốc'),
+                                              ('ROLE_SELLER', 'Người bán hàng'),
+                                              ('ROLE_BUYER', 'Người thu mua'),
+                                              ('ROLE_CUSTOMER', 'Khách hàng'),
+                                              ('ROLE_AGENT', 'Đại lý');
 
 -- Tạo 2 Groups
 INSERT INTO groups (name, description) VALUES
@@ -100,20 +107,27 @@ INSERT INTO groups (name, description) VALUES
                                                ('GROUP_GENERAL', 'Nhóm chung'),
                                                ('GROUP_FINANCE', 'Nhóm tài chính'),
                                                ('GROUP_PURCHASING', 'Nhóm mua hàng'),
-                                               ('GROUP_HRM', 'Nhóm quản lý nhân sự');
+                                               ('GROUP_HRM', 'Nhóm quản lý nhân sự'),
+                                               ('GROUP_ECOMMERCE', 'Nhóm thương mại');
 
 -- Gán quyền cho nhóm (Group -> Role)
 -- Nhóm System chứa quyền admin và manager
-INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_SYSTEM', 'ROLE_ADMIN');
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_SYSTEM', 'ROLE_SYSTEM_ADMIN');
 -- Nhóm General chứa quyền staff
 INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_GENERAL', 'ROLE_STAFF');
+
+-- Nhóm Ecommerce chứa các quyền mua bán
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE_SELLER');
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE_BUYER');
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE_CUSTOMER');
+INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE_AGENT');
 
 -- Tạo tài khoản mẫu (Mật khẩu '123456' băm bằng BCrypt)
 INSERT INTO users (username, password, email) VALUES ('sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@phongora-aw.com');
 
 -- Gán trực tiếp Quyền cho User (User -> Role) thay vì gán Group
 -- sys_admin được cấp quyền admin
-INSERT INTO user_roles (user_name, role_name) VALUES ('sys_admin', 'ROLE_ADMIN');
+INSERT INTO user_roles (user_name, role_name) VALUES ('sys_admin', 'ROLE_SYSTEM_ADMIN');
 
 -- II. Chuyển sang database master data
 \c aw_hr;
@@ -339,6 +353,7 @@ BEGIN
                                                                  (gen_random_uuid(), 'FE_DEV_JUN', 'Frontend Developer (Junior)', lvl_jun),
                                                                  (gen_random_uuid(), 'QA_QC', 'QA/QC Engineer', lvl_jun),
                                                                  (gen_random_uuid(), 'IT_MGR', 'IT Manager', lvl_mgr);
+
 
     -- Khởi tạo chức danh Khối HR & FIN
     INSERT INTO job_titles (id, code, name, job_level_id) VALUES
