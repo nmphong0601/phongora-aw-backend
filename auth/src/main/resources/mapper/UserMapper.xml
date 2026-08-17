@@ -34,7 +34,7 @@
         SELECT u.*, ur.role_name
         FROM users u
         LEFT JOIN user_roles ur ON u.username = ur.user_name
-        WHERE u.username = #{username} OR u.email = #{email} OR u.phone = #{phone}
+        WHERE u.username = #{username} OR u.email = #{username} OR u.phone = #{username}
     </select>
 
     <select id="existsByUsername" resultType="boolean">

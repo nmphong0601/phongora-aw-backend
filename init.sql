@@ -123,7 +123,7 @@ INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE
 INSERT INTO group_roles (group_name, role_name) VALUES ('GROUP_ECOMMERCE', 'ROLE_AGENT');
 
 -- Tạo tài khoản mẫu (Mật khẩu '123456' băm bằng BCrypt)
-INSERT INTO users (username, password, email) VALUES ('sys_admin', '$2a$10$wEkiK/Q.4qX4nE8.hG5g/.mYhL3NItN4N2E.h/wE6t/MvU/U/m6/K', 'sysadmin@phongora-aw.com');
+INSERT INTO users (username, password, email) VALUES ('sys_admin', '$2a$10$P1Rd9flI4u2faY01DYK1WOEcT8q6gBT15p1A0X3dbBHifXBVjzQIy', 'sysadmin@phongora-aw.com');
 
 -- Gán trực tiếp Quyền cho User (User -> Role) thay vì gán Group
 -- sys_admin được cấp quyền admin

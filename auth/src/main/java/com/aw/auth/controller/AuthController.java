@@ -9,6 +9,8 @@ import com.aw.auth.dto.res.UserProfileResponse;
 import com.aw.auth.service.AuthService;
 import com.aw.auth.util.JwtProvider;
 import com.aw.common.security.JwtService;
+import com.aw.common.security.SecurityUtils;
+import com.aw.common.security.UserPrincipal;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,11 +18,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -68,8 +72,26 @@ public class AuthController {
                     content = @Content
             )
     })
-    public AuthResponse login(@RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ApiResponse<AuthResponse> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+        // 1. Authenticate user and generate tokens
+        AuthResponse authResponse = authService.login(request);
+
+        // 2. Create the HttpOnly refresh token cookie
+        ResponseCookie cookie = ResponseCookie.from("__Host-refreshToken", authResponse.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)               // Required for __Host- prefix
+                .path("/")                  // Required for __Host- prefix
+                .maxAge(7 * 24 * 60 * 60)   // Lifespan (e.g., 7 days)
+                .sameSite("Strict")         // Protect against CSRF
+                .build();
+
+        // 3. Return access token in body and refresh token in cookie
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 4. Clear raw refresh token from response body
+        authResponse.setRefreshToken(null);
+
+        return ApiResponse.success(authResponse);
     }
 
     @PostMapping("/refresh")
@@ -86,8 +108,26 @@ public class AuthController {
                     content = @Content
             )
     })
-    public ApiResponse<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        return ApiResponse.success(authService.refreshToken(request));
+    public ApiResponse<AuthResponse> refresh(@CookieValue(name = "__Host-refresh_token") String refreshTokenCookie, HttpServletResponse response) {
+        RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenCookie);
+        AuthResponse authResponse = authService.refreshToken(request);
+
+        ResponseCookie cookie = ResponseCookie.from("__Host-refreshToken", authResponse.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)               // 1. MUST be true
+                .path("/")                  // 2. MUST be "/"
+                // .domain("...")           // 3. DO NOT call domain(...)
+                .maxAge(7 * 24 * 60 * 60)   // Lifespan (e.g., 7 days)
+                .sameSite("Strict")         // CSRF protection
+                .build();
+
+        // 3. Return access token in body and refresh token in cookie
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 4. Clear raw refresh token from response body
+        authResponse.setRefreshToken(null);
+
+        return ApiResponse.success(authResponse);
     }
 
     @PostMapping("/logout")

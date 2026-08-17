@@ -1,5 +1,6 @@
 package com.aw.auth.dto.res;
 
+import com.aw.auth.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,4 +18,5 @@ public class AuthResponse {
     private String tokenType;
     private String userId;
     private Set<String> roles;
+    private User user;
 }

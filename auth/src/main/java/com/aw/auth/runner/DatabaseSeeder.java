@@ -4,11 +4,13 @@ import com.aw.auth.dto.req.HrEmployeeRequest;
 import com.aw.auth.dto.res.HrEmployeeResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.mapper.UserMapper;
+import com.aw.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -52,14 +54,21 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         try {
             String endpoint = hrServiceUrl + "/api/v1/employees/seed";
-            ResponseEntity<HrEmployeeResponse> response = restTemplate.postForEntity(
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<HrEmployeeRequest> requestEntity = new HttpEntity<>(hrRequest, headers);
+
+            ResponseEntity<ApiResponse<HrEmployeeResponse>> response = restTemplate.exchange(
                     endpoint,
-                    hrRequest,
-                    HrEmployeeResponse.class
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {}
             );
 
+
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                HrEmployeeResponse hrEmployeeData = response.getBody();
+                ApiResponse<HrEmployeeResponse> apiResponse = response.getBody();
+                HrEmployeeResponse hrEmployeeData = apiResponse.getData();
 
                 // Sinh UUID thủ công cho User trước khi gọi MyBatis
                 UUID newUserId = UUID.randomUUID();
