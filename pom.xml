@@ -24,13 +24,14 @@
 
     <modules>
         <module>common</module>
-        <module>gateway</module>
-        <module>auth</module>
         <module>workflow</module>
+        <module>hr</module>
+        <module>auth</module>
         <module>document</module>
         <module>finance</module>
         <module>notification</module>
-        <module>hr</module>
+        <module>gateway</module>
+        <module>app</module>
     </modules>
 
     <dependencyManagement>

@@ -1,0 +1,93 @@
+﻿server:
+  port: 8081
+
+spring:
+  application:
+    name: aw-monolith
+
+  # Cấu hình Database PostgreSQL hợp nhất (aw_db)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aw_db
+    username: awuser
+    password: phongora1T@Dmin
+    driver-class-name: org.postgresql.Driver
+
+  # Cấu hình Redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # Cấu hình Kafka cho các sự kiện không đồng bộ (Asynchronous Events)
+  kafka:
+    bootstrap-servers: 127.0.0.1:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.aw.*"
+
+  # Cấu hình gửi mail thông báo
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: nmphong0601@gmail.com
+    password: 123456
+    properties:
+      mail:
+        SMTP:
+          auth: true
+          starttls.enable: true
+
+# Cấu hình Camunda Engine chạy nhúng trong Monolith
+camunda:
+  bpm:
+    database:
+      schema-update: true
+    admin-user:
+      id: "admin"
+      password: "admin"
+      first-name: "Admin"
+    job-execution:
+      enabled: true
+    webapp:
+      index-redirect-enabled: true
+    generic-properties:
+      properties:
+        historyTimeToLive: P30D
+
+# Cấu hình JWT thống nhất
+jwt:
+  secret: phongora-vnF3A51D86CB9047E21A6E9CF5D14B7382E8570AD1C63E492FB04A7E9C52D8163F
+  expiration: 86400000 # 1 ngày (ms)
+  refresh-expiration: 604800000 # 7 ngày (ms)
+
+# Cấu hình MyBatis quét mapper từ tất cả các module
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.aw.auth.entity,com.aw.hr.entity
+  type-handlers-package: com.aw.common.config.type
+  configuration:
+    map-underscore-to-camel-case: true
+
+# Cấu hình thư mục lưu trữ tài liệu
+app:
+  storage:
+    path: ./uploads/documents/
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.aw.auth.mapper: DEBUG
+    com.aw.hr.mapper: DEBUG
+    com.aw.workflow: INFO

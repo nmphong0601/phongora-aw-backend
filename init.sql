@@ -1,6 +1,10 @@
 -- File script này sẽ được tự động thực thi BỞI USER POSTGRES khi container chạy lần ĐẦU TIÊN.
 -- Tạo các database tách biệt cho từng Microservice để đảm bảo tính độc lập.
 
+-- Consolidated database for Modular Monolith
+CREATE DATABASE aw_db;
+GRANT ALL PRIVILEGES ON DATABASE aw_db TO awuser;
+
 CREATE DATABASE aw_auth;
 CREATE DATABASE aw_hr;
 CREATE DATABASE aw_workflow;
@@ -381,3 +385,279 @@ CREATE TABLE workflow_instances (
                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ====================================================================
+-- IV. CONSOLIDATED DATABASE FOR MODULAR MONOLITH: aw_db
+-- ====================================================================
+\c aw_db;
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1. Auth Tables
+CREATE TABLE roles (
+                       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                       name VARCHAR(50) UNIQUE NOT NULL,
+                       description VARCHAR(255)
+);
+
+CREATE TABLE groups (
+                        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                        name VARCHAR(100) UNIQUE NOT NULL,
+                        description VARCHAR(255)
+);
+
+CREATE TABLE users (
+                       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                       username VARCHAR(50) UNIQUE NOT NULL,
+                       password VARCHAR(255) NOT NULL,
+                       email VARCHAR(100) UNIQUE NULL,
+                       phone VARCHAR(12) UNIQUE NULL,
+                       first_name VARCHAR(100) NULL,
+                       last_name VARCHAR(100) NULL,
+                       is_active BOOLEAN DEFAULT TRUE,
+                       employee_id UUID UNIQUE,
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE group_roles (
+                             group_name VARCHAR(100) NOT NULL,
+                             role_name VARCHAR(50) NOT NULL,
+                             PRIMARY KEY (group_name, role_name),
+                             CONSTRAINT fk_group FOREIGN KEY (group_name) REFERENCES groups(name) ON DELETE CASCADE,
+                             CONSTRAINT fk_role_group FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE
+);
+
+CREATE TABLE user_roles (
+                            user_name VARCHAR(50) NOT NULL,
+                            role_name VARCHAR(50) NOT NULL,
+                            PRIMARY KEY (user_name, role_name),
+                            CONSTRAINT fk_user FOREIGN KEY (user_name) REFERENCES users(username) ON DELETE CASCADE,
+                            CONSTRAINT fk_role_user FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE
+);
+
+CREATE TABLE user_role_menus (
+                                 role_name VARCHAR(50) NOT NULL,
+                                 menu_code VARCHAR(100) NOT NULL,
+                                 can_read BOOLEAN DEFAULT FALSE,
+                                 can_write BOOLEAN DEFAULT FALSE,
+                                 can_update BOOLEAN DEFAULT FALSE,
+                                 can_delete BOOLEAN DEFAULT FALSE,
+                                 can_approve BOOLEAN DEFAULT FALSE,
+                                 can_return BOOLEAN DEFAULT FALSE,
+                                 can_reject BOOLEAN DEFAULT FALSE,
+                                 PRIMARY KEY (role_name, menu_code)
+);
+
+-- Seed Auth Data
+INSERT INTO roles (name, description) VALUES
+    ('ROLE_SYSTEM_ADMIN', 'Quản trị viên hệ thống'),
+    ('ROLE_STAFF', 'Nhân viên thông thường'),
+    ('ROLE_LEADER', 'Trưởng nhóm'),
+    ('ROLE_SUP', 'Giám sát'),
+    ('ROLE_DEPT_MANAGER', 'Trưởng phòng'),
+    ('ROLE_HR_EXEC', 'Chuyên viên Nhân sự'),
+    ('ROLE_HR_MANAGER', 'Trưởng phòng Nhân sự'),
+    ('ROLE_ACC_MANAGER', 'Trưởng phòng Kế toán'),
+    ('ROLE_DIV_DIRECTOR', 'Trưởng khối'),
+    ('ROLE_BR_DIRECTOR', 'Giám đốc chi nhánh'),
+    ('ROLE_GD', 'Giám đốc'),
+    ('ROLE_SELLER', 'Người bán hàng'),
+    ('ROLE_BUYER', 'Người thu mua'),
+    ('ROLE_CUSTOMER', 'Khách hàng'),
+    ('ROLE_AGENT', 'Đại lý');
+
+INSERT INTO groups (name, description) VALUES
+    ('GROUP_SYSTEM', 'Nhóm vận hành hệ thống'),
+    ('GROUP_GENERAL', 'Nhóm chung'),
+    ('GROUP_FINANCE', 'Nhóm tài chính'),
+    ('GROUP_PURCHASING', 'Nhóm mua hàng'),
+    ('GROUP_HRM', 'Nhóm quản lý nhân sự'),
+    ('GROUP_ECOMMERCE', 'Nhóm thương mại');
+
+INSERT INTO group_roles (group_name, role_name) VALUES
+    ('GROUP_SYSTEM', 'ROLE_SYSTEM_ADMIN'),
+    ('GROUP_GENERAL', 'ROLE_STAFF'),
+    ('GROUP_ECOMMERCE', 'ROLE_SELLER'),
+    ('GROUP_ECOMMERCE', 'ROLE_BUYER'),
+    ('GROUP_ECOMMERCE', 'ROLE_CUSTOMER'),
+    ('GROUP_ECOMMERCE', 'ROLE_AGENT');
+
+INSERT INTO users (username, password, email) VALUES
+    ('sys_admin', '$2a$10$P1Rd9flI4u2faY01DYK1WOEcT8q6gBT15p1A0X3dbBHifXBVjzQIy', 'sysadmin@phongora-aw.com');
+
+INSERT INTO user_roles (user_name, role_name) VALUES
+    ('sys_admin', 'ROLE_SYSTEM_ADMIN');
+
+-- 2. HR Tables
+CREATE TABLE employee_code_sequences (
+    company_code VARCHAR(10) PRIMARY KEY,
+    next_sequence INT DEFAULT 1
+);
+
+INSERT INTO employee_code_sequences (company_code, next_sequence) VALUES ('AW', 1);
+
+CREATE TABLE org_unit_levels (
+    id SERIAL PRIMARY KEY,
+    level_index INT NOT NULL UNIQUE,
+    level_code VARCHAR(20) NOT NULL,
+    level_name VARCHAR(50) NOT NULL,
+    can_have_headcount BOOLEAN DEFAULT TRUE,
+    description TEXT
+);
+
+CREATE TABLE org_units (
+    id UUID PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    level_id INT NOT NULL,
+    parent_id UUID,
+    manager_id UUID,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (level_id) REFERENCES org_unit_levels(id),
+    FOREIGN KEY (parent_id) REFERENCES org_units(id)
+);
+
+CREATE INDEX idx_awdb_org_parent ON org_units(parent_id);
+
+CREATE TABLE job_levels (
+    id UUID PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    rank_value INT NOT NULL,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE job_titles (
+    id UUID PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    job_level_id UUID,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_level_id) REFERENCES job_levels(id)
+);
+
+CREATE TABLE employees (
+    id UUID PRIMARY KEY,
+    employee_code VARCHAR(20) UNIQUE NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    org_unit_code VARCHAR(50) NOT NULL,
+    title_code VARCHAR(50),
+    employment_status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE headcount_plans (
+    id UUID PRIMARY KEY,
+    department_id UUID NOT NULL,
+    title_id UUID NOT NULL,
+    plan_year INT NOT NULL,
+    target_count INT NOT NULL DEFAULT 0,
+    current_count INT NOT NULL DEFAULT 0,
+    status VARCHAR(30) DEFAULT 'DRAFT',
+    workflow_instance_id UUID,
+    created_by UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_awdb_dept_title_year UNIQUE (department_id, title_id, plan_year)
+);
+
+-- Seed HR Data
+INSERT INTO org_unit_levels (level_index, level_code, level_name, can_have_headcount)
+VALUES
+    (1, 'COMPANY', 'Tổng công ty', FALSE),
+    (2, 'BRANCH', 'Chi nhánh', FALSE),
+    (3, 'DIVISION', 'Khối nghiệp vụ', TRUE),
+    (4, 'DEPARTMENT', 'Phòng ban', TRUE),
+    (5, 'TEAM', 'Đội nhóm', TRUE);
+
+DO $$
+DECLARE
+    v_company_id UUID := gen_random_uuid();
+    v_branch_hcm_id UUID := gen_random_uuid();
+    v_div_bo_id UUID := gen_random_uuid();
+    v_dept_hr_id UUID := gen_random_uuid();
+    v_div_tech_id UUID := gen_random_uuid();
+    v_dept_dev_id UUID := gen_random_uuid();
+BEGIN
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_company_id, 'AW_CORP', 'Awesome Corporation', 1, NULL);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_branch_hcm_id, 'BR_HCM', 'Chi nhánh Hồ Chí Minh', 2, v_company_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_div_bo_id, 'DIV_BO', 'Khối Vận hành nội bộ', 3, v_branch_hcm_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_div_tech_id, 'DIV_TECH', 'Khối Công nghệ', 3, v_branch_hcm_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_dept_hr_id, 'DEPT_HR', 'Phòng Nhân sự', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_ACC', 'Phòng Kế toán', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_ADMIN', 'Phòng Hành chính', 4, v_div_bo_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (v_dept_dev_id, 'DEPT_DEV', 'Phòng Phát triển Phần mềm', 4, v_div_tech_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES
+        (gen_random_uuid(), 'TEAM_BE', 'Team Backend', 5, v_dept_dev_id),
+        (gen_random_uuid(), 'TEAM_FE', 'Team Frontend', 5, v_dept_dev_id);
+
+    INSERT INTO org_units (id, code, name, level_id, parent_id)
+    VALUES (gen_random_uuid(), 'DEPT_QA', 'Phòng Kiểm thử (QA)', 4, v_div_tech_id);
+END $$;
+
+INSERT INTO job_levels (id, code, name, rank_value)
+VALUES
+    (gen_random_uuid(), 'INT', 'Intern / Thực tập sinh', 1),
+    (gen_random_uuid(), 'FRE', 'Fresher / Sinh viên mới tốt nghiệp', 2),
+    (gen_random_uuid(), 'JUN', 'Junior / Chuyên viên', 3),
+    (gen_random_uuid(), 'MID', 'Middle / Chuyên viên chính', 4),
+    (gen_random_uuid(), 'SEN', 'Senior / Chuyên viên cao cấp', 5),
+    (gen_random_uuid(), 'MGR', 'Manager / Quản lý', 6),
+    (gen_random_uuid(), 'DIR', 'Director / Giám đốc', 7),
+    (gen_random_uuid(), 'C_LEVEL', 'C-Level / Ban điều hành', 8);
+
+DO $$
+DECLARE
+    lvl_jun UUID; lvl_sen UUID; lvl_mgr UUID; lvl_dir UUID; lvl_c_level UUID;
+BEGIN
+    SELECT id INTO lvl_jun FROM job_levels WHERE code = 'JUN';
+    SELECT id INTO lvl_sen FROM job_levels WHERE code = 'SEN';
+    SELECT id INTO lvl_mgr FROM job_levels WHERE code = 'MGR';
+    SELECT id INTO lvl_dir FROM job_levels WHERE code = 'DIR';
+    SELECT id INTO lvl_c_level FROM job_levels WHERE code = 'C_LEVEL';
+
+    INSERT INTO job_titles (id, code, name, job_level_id) VALUES
+        (gen_random_uuid(), 'BE_DEV_JUN', 'Backend Developer (Junior)', lvl_jun),
+        (gen_random_uuid(), 'BE_DEV_SEN', 'Backend Developer (Senior)', lvl_sen),
+        (gen_random_uuid(), 'FE_DEV_JUN', 'Frontend Developer (Junior)', lvl_jun),
+        (gen_random_uuid(), 'QA_QC', 'QA/QC Engineer', lvl_jun),
+        (gen_random_uuid(), 'IT_MGR', 'IT Manager', lvl_mgr),
+        (gen_random_uuid(), 'HR_EXEC', 'HR Executive', lvl_dir),
+        (gen_random_uuid(), 'HR_MGR', 'HR Manager', lvl_dir),
+        (gen_random_uuid(), 'ACC', 'Accountant', lvl_dir),
+        (gen_random_uuid(), 'DIV_DIR', 'Division Director', lvl_dir),
+        (gen_random_uuid(), 'BR_DIR', 'Branch Director', lvl_dir),
+        (gen_random_uuid(), 'CEO', 'General Director', lvl_c_level);
+END $$;
+
+-- 3. Workflow Tables
+CREATE TABLE workflow_instances (
+    id SERIAL PRIMARY KEY,
+    proposal_id VARCHAR(50) UNIQUE NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    current_step VARCHAR(50) NOT NULL,
+    assignee VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

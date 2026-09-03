@@ -31,13 +31,4 @@
             <version>6.21.0</version> <!-- Có thể điều chỉnh version phù hợp -->
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>

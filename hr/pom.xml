@@ -23,14 +23,11 @@
             <groupId>com.phongora-aw</groupId>
             <artifactId>common</artifactId>
         </dependency>
+        <!-- Module Workflow for in-process WorkflowService -->
+        <dependency>
+            <groupId>com.phongora-aw</groupId>
+            <artifactId>workflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -13,15 +13,13 @@ import com.aw.hr.dto.res.headcount.plan.UpdateHeadcountPlanResponse;
 import com.aw.hr.entity.HeadcountPlanEntity;
 import com.aw.hr.mapper.HeadcountPlanMapper;
 import com.aw.hr.service.HeadcountPlanService;
+import com.aw.workflow.model.WorkflowInstance;
+import com.aw.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -31,15 +29,12 @@ import static com.aw.common.util.PermissionUtils.checkWorkflowPermission;
 @Service
 @RequiredArgsConstructor
 public class HeadcountPlanServiceImpl implements HeadcountPlanService {
-    private final RestTemplate restTemplate;
+    private final WorkflowService workflowService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private static final String TOPIC_WORKFLOW_START = "workflow-start-events";
     private static final String PROCESS_DEFINITION_KEY = "headcount-plan-approval";
 
     private final HeadcountPlanMapper headcountPlanMapper;
-
-    @Value("${service.workflow.url:http://localhost:8087}")
-    private String workflowServiceUrl;
 
     @Override
     @Transactional
@@ -132,18 +127,9 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
 
         // Gọi Workflow lấy dữ liệu động ghép vào
         try {
-            String endpoint = String.format("%s/api/v1/workflow/status/%s", workflowServiceUrl, id.toString());
-            ResponseEntity<ApiResponse<WorkflowInstanceResponse>> responseEntity = restTemplate.exchange(
-                    endpoint,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<>() {}
-            );
-
-            ApiResponse<WorkflowInstanceResponse> apiResponse = responseEntity.getBody();
-
-            if (apiResponse != null && apiResponse.getData() != null) {
-                WorkflowInstanceResponse wfInstance = apiResponse.getData();
+            WorkflowInstance wf = workflowService.getWorkflowStatus(id.toString());
+            if (wf != null) {
+                WorkflowInstanceResponse wfInstance = ObjectMapperUtils.map(wf, WorkflowInstanceResponse.class);
 
                 if (!checkWorkflowPermission(
                         SecurityUtils.getCurrentUser(),
@@ -156,7 +142,7 @@ public class HeadcountPlanServiceImpl implements HeadcountPlanService {
                 response.setWorkflowInstance(wfInstance);
             }
         } catch (Exception e) {
-            log.warn("Lỗi khi gọi Workflow Service cho plan {}: {}", id, e.getMessage());
+            log.warn("Lỗi khi lấy thông tin Workflow cho plan {}: {}", id, e.getMessage());
             response.setWorkflowInstance(null);
         }
 

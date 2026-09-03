@@ -33,37 +33,37 @@ spring:
 
         # Route cho Proposal
         - id: proposal-route
-          uri: http://localhost:8082 # Địa chỉ thực của proposal-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/proposals/**
 
         # Route cho Master Data Services
         - id: data-route
-          uri: http://localhost:8083
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/data/**
 
         # Route cho Finance
         - id: finance-route
-          uri: http://localhost:8084 # Địa chỉ thực của finance-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/finance/**
 
         # Route cho Document
         - id: document-route
-          uri: http://localhost:8085 # Địa chỉ thực của document-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/documents/**
 
         # Route cho Notification
         - id: notification-route
-          uri: http://localhost:8086 # Địa chỉ thực của notification-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/notifications/**
 
         # Route cho Workflow
         - id: workflow-route
-          uri: http://localhost:8087 # Địa chỉ thực của workflow-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/process/**
           filters:
@@ -71,7 +71,7 @@ spring:
 
         # Route dành riêng cho giao diện Camunda Webapp
         - id: camunda-webapp-route
-          uri: http://localhost:8087
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/camunda/**
           filters:
@@ -80,7 +80,7 @@ spring:
 
         # Route dành cho REST API của Camunda
         - id: camunda-engine-rest-route
-          uri: http://localhost:8087
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/engine-rest/**
           filters:
@@ -88,26 +88,19 @@ spring:
 
         # Route cho HR
         - id: hr-route
-          uri: http://localhost:8088 # Địa chỉ thực của hr-services
+          uri: http://localhost:8081 # Monolith
           predicates:
             - Path=/api/v1/hr/** # Mọi request bắt đầu bằng /api/v1/hr/ sẽ vào đây
           filters:
             - RewritePath=/api/v1/hr/(?<segment>.*), /api/v1/${segment}
 
         # Route riêng cho Swagger Docs
-        - id: auth-docs-route
+        - id: monolith-docs-route
           uri: http://localhost:8081
           predicates:
-            - Path=/api/v1/auth/api-docs
+            - Path=/api/v1/monolith/api-docs
           filters:
-            - RewritePath=/api/v1/auth/api-docs, /api-docs
-
-        - id: hr-docs-route
-          uri: http://localhost:8088
-          predicates:
-            - Path=/api/v1/hr/api-docs
-          filters:
-            - RewritePath=/api/v1/hr/api-docs, /api-docs
+            - RewritePath=/api/v1/monolith/api-docs, /api-docs
 
 jwt:
   secret: phongora-vnF3A51D86CB9047E21A6E9CF5D14B7382E8570AD1C63E492FB04A7E9C52D8163F
@@ -122,11 +115,7 @@ logging:
 
 springdoc:
   swagger-ui:
-    # Cấu hình danh sách các service mà Gateway sẽ tổng hợp API docs
+    # Cấu hình Gateway tổng hợp API docs từ Monolith
     urls:
-      - name: auth
-        url: /api/v1/auth/api-docs
-      - name: workflow
-        url: /api/v1/workflow/api-docs
-      - name: hr
-        url: /api/v1/hr/api-docs
+      - name: Phongora AW Monolith
+        url: /api/v1/monolith/api-docs

@@ -11,19 +11,13 @@ import com.aw.auth.mapper.UserMapper;
 import com.aw.auth.service.AuthService;
 import com.aw.common.response.ApiResponse;
 import com.aw.common.security.JwtService;
+import com.aw.hr.dto.res.EmployeeResponse;
+import com.aw.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,13 +26,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final RestTemplate restTemplate;
+    private final EmployeeService employeeService;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
-    @Value("${service.hr.url:http://localhost:8088}")
-    private String hrServiceUrl;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
@@ -188,26 +179,25 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private HrEmployeeResponse getEmployeeInfo(User user) {
-        // 1. Fetch a system token from your Login Server
-        String systemToken = jwtService.generateSystemToken();
-
-        // 2. Pass the token to the HR service
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(systemToken); // Produces "Bearer <token>"
-
-        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-
-        String endpoint = String.format("%s/api/v1/employees/%s", hrServiceUrl, user.getEmployeeId());
-        ResponseEntity<ApiResponse<HrEmployeeResponse>> response = restTemplate.exchange(
-                endpoint,
-                HttpMethod.GET,
-                requestEntity,
-                new ParameterizedTypeReference<>() {}
-        );
-
-        // 3. Extract your data payload safely
-        ApiResponse<HrEmployeeResponse> apiResponse = response.getBody();
-
-        return (apiResponse != null) ? apiResponse.getData() : null;
+        if (user.getEmployeeId() == null) {
+            return null;
+        }
+        try {
+            EmployeeResponse emp = employeeService.findById(user.getEmployeeId());
+            if (emp == null) {
+                return null;
+            }
+            HrEmployeeResponse res = new HrEmployeeResponse();
+            res.setId(emp.getId());
+            res.setEmployeeCode(emp.getEmployeeCode());
+            res.setFullName(emp.getFullName());
+            res.setOrgUnitCode(emp.getOrgUnitCode());
+            res.setTitleCode(emp.getTitleCode());
+            res.setEmploymentStatus(emp.getEmploymentStatus());
+            res.setCreatedAt(emp.getCreatedAt());
+            return res;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

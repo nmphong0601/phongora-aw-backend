@@ -1,19 +1,15 @@
 package com.aw.auth.runner;
 
-import com.aw.auth.dto.req.HrEmployeeRequest;
-import com.aw.auth.dto.res.HrEmployeeResponse;
 import com.aw.auth.entity.User;
 import com.aw.auth.mapper.UserMapper;
-import com.aw.common.response.ApiResponse;
+import com.aw.hr.dto.req.CreateSeedEmployeeRequest;
+import com.aw.hr.dto.res.CreateSeedEmployeeResponse;
+import com.aw.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
@@ -22,12 +18,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
-    private final RestTemplate restTemplate;
+    private final EmployeeService employeeService;
     private final UserMapper userMapper; // Inject MyBatis Mapper
     private final PasswordEncoder passwordEncoder;
-
-    @Value("${service.hr.url:http://localhost:8088}")
-    private String hrServiceUrl;
 
     @Override
     public void run(String... args) {
@@ -46,30 +39,16 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedUser(String fullName, String companyCode, String orgUnitCode, String titleCode, String roleName) {
-        HrEmployeeRequest hrRequest = new HrEmployeeRequest();
+        CreateSeedEmployeeRequest hrRequest = new CreateSeedEmployeeRequest();
         hrRequest.setFullName(fullName);
         hrRequest.setCompanyCode(companyCode);
         hrRequest.setOrgUnitCode(orgUnitCode);
         hrRequest.setTitleCode(titleCode);
 
         try {
-            String endpoint = hrServiceUrl + "/api/v1/employees/seed";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<HrEmployeeRequest> requestEntity = new HttpEntity<>(hrRequest, headers);
+            CreateSeedEmployeeResponse hrEmployeeData = employeeService.createSeedEmployee(hrRequest);
 
-            ResponseEntity<ApiResponse<HrEmployeeResponse>> response = restTemplate.exchange(
-                    endpoint,
-                    HttpMethod.POST,
-                    requestEntity,
-                    new ParameterizedTypeReference<>() {}
-            );
-
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                ApiResponse<HrEmployeeResponse> apiResponse = response.getBody();
-                HrEmployeeResponse hrEmployeeData = apiResponse.getData();
-
+            if (hrEmployeeData != null) {
                 // Sinh UUID thủ công cho User trước khi gọi MyBatis
                 UUID newUserId = UUID.randomUUID();
 
@@ -91,7 +70,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                         titleCode, newUser.getUsername(), hrEmployeeData.getId());
             }
         } catch (Exception e) {
-            log.error("Lỗi khi gọi HR Service để khởi tạo {}: {}", titleCode, e.getMessage());
+            log.error("Lỗi khi khởi tạo {}: {}", titleCode, e.getMessage());
         }
     }
 }
